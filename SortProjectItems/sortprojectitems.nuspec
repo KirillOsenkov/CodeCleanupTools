@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Do not remove this test for UTF-8: if ??? doesn?t appear as greek uppercase omega letter enclosed in quotation marks, you should use an editor that supports UTF-8, not this one. -->
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <!-- Read this before publishing packages to chocolatey.org: https://github.com/chocolatey/chocolatey/wiki/CreatePackages -->
+    <id>sortprojectitems</id>
+    <title>Sort Project Items</title>
+    <version>1.0.0</version>
+    <authors>Kirill Osenkov</authors>
+    <owners>KirillOsenkov</owners>
+    <summary>Sorts MSBuild project items in ItemGroup elements of .csproj and .vbproj files to simplify merging project files.</summary>
+    <description>Sorts MSBuild project items in ItemGroup elements of .csproj and .vbproj files to simplify merging project files.</description>
+    <projectUrl>http://github.com/kirillosenkov/codecleanuptools</projectUrl>
+    <tags>sortprojectitems</tags>
+    <copyright></copyright>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <releaseNotes>Initial release</releaseNotes>
+  </metadata>
+  <files>
+    <file src="bin\Debug\SortProjectItems.exe" target="." />
+  </files>
+</package>
