@@ -23,7 +23,7 @@ Sorts the Compile and Reference items in ItemGroups of your *.csproj and *.vbpro
 It will recursively find all *.csproj and *.vbproj files in the current directory and all subdirectories and sort all MSBuild ItemGroups. It will also consolidate ItemGroups by kind and remove empty ItemGroups.
 
 Note: Visual Studio normally tries to preserve sorting when modifying the project, however:
-  * several operations such as Copy-Paste in Solution Explorer and Include in Project for resource files are known to break the order.
+  * several operations such as Rename in Solution Explorer and Include in Project for resource files are known to break the order.
   * once the order is broken (an item is inserted in incorrect location), Visual Studio keeps making it worse, so subsequent modifications drift towards random ordering.
   * it helps to keep all branches sorted, so that even if projects are significantly diverged, there is a well-defined "normal form" for a project.
 
