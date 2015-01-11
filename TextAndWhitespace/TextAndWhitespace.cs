@@ -8,14 +8,20 @@ class TextAndWhitespace
 {
     static void Main(string[] args)
     {
-        if (args.Length > 0)
+        if (args.Length > 1)
         {
             PrintHelp();
             return;
         }
+        
+        var pattern = "*.cs";
+        if (args.Length == 1)
+        {
+            pattern = args[0];
+        }
 
         var folder = Environment.CurrentDirectory;
-        var files = Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories);
+        var files = Directory.GetFiles(folder, pattern, SearchOption.AllDirectories);
         foreach (var file in files)
         {
             var text = File.ReadAllText(file);
