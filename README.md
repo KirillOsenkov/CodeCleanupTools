@@ -10,6 +10,7 @@ Opens every *.cs file (or other pattern) in the current directory and all subdir
   1. Saves the file with UTF8 encoding with signature (BOM)
   2. Converts all line endings to CRLF (Windows)
   3. Removes trailing whitespace from every line
+  4. Removes subsequent empty lines (StyleCop fix) - currently if there's 3 or more consecutive empty lines, it just removes one
 
 SortProjectItems
 ----------------
