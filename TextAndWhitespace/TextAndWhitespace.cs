@@ -1,37 +1,155 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-class Program
+class TextAndWhitespace
 {
     static void Main(string[] args)
     {
+        if (args.Length > 0)
+        {
+            PrintHelp();
+            return;
+        }
+
         var folder = args[0];
         var files = Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories);
         foreach (var file in files)
         {
             var text = File.ReadAllText(file);
+            var newText = text;
 
             if (IsGeneratedCode(text))
             {
                 continue;
             }
 
-            text = text.Replace("\n\r\n\r", "\n\r");
+            newText = EnsureCrLf(newText);
+            newText = RemoveConsecutiveEmptyLines(newText);
+            newText = TrimTrailingWhitespaceFromEveryLine(newText);
 
-            text = EnsureCrLf(text);
-            File.WriteAllText(file, text, Encoding.UTF8);
-
-            var lines = File.ReadLines(file);
-            lines = lines.Select(l => l.TrimEnd()).ToArray();
-            File.WriteAllLines(file, lines, Encoding.UTF8);
+            if (newText != text)
+            {
+                File.WriteAllText(file, newText, Encoding.UTF8);
+            }
         }
+    }
+
+    public static string TrimTrailingWhitespaceFromEveryLine(string text)
+    {
+        IEnumerable<string> lines = GetLines(text);
+        lines = lines.Select(l => l.TrimEnd());
+        text = string.Join(Environment.NewLine, lines);
+        return text;
+    }
+
+    private static string RemoveConsecutiveEmptyLines(string text)
+    {
+        return text.Replace("\n\r\n\r", "\n\r");
+    }
+
+    private static void PrintHelp()
+    {
+        Console.WriteLine(@"Usage: TextAndWhitespace.exe
+       For every .cs file in the current directory and all subdirectories:
+        * Converts all line endings to CRLF
+        * Removes two consecutive empty lines leaving just one
+        * Removes trailing spaces from every line");
     }
 
     public static bool IsGeneratedCode(string text)
     {
         return text.Contains("This code was generated");
+    }
+
+    public static string[] GetLines(string text, bool includeLineBreaksInLines = false)
+    {
+        var lineLengths = GetLineLengths(text);
+        int position = 0;
+        var lines = new string[lineLengths.Length];
+        for (int i = 0; i < lineLengths.Length; i++)
+        {
+            var lineLength = lineLengths[i];
+            if (!includeLineBreaksInLines)
+            {
+                if (lineLength >= 2 &&
+                    text[position + lineLength - 2] == '\r' && 
+                    text[position + lineLength - 1] == '\n')
+                {
+                    lineLength -= 2;
+                }
+                else if (lineLength >= 1 &&
+                    (text[position + lineLength - 1] == '\r' || 
+                    text[position + lineLength - 1] == '\n'))
+                {
+                    lineLength--;
+                }
+            }
+
+            lines[i] = text.Substring(position, lineLength);
+            position += lineLengths[i];
+        }
+
+        return lines;
+    }
+
+    public static int[] GetLineLengths(string text)
+    {
+        if (text == null)
+        {
+            throw new ArgumentNullException();
+        }
+
+        if (text.Length == 0)
+        {
+            return new int[0];
+        }
+
+        var result = new List<int>();
+        int currentLineLength = 0;
+        bool previousWasCarriageReturn = false;
+
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (text[i] == '\r')
+            {
+                if (previousWasCarriageReturn)
+                {
+                    currentLineLength++;
+                    result.Add(currentLineLength);
+                    currentLineLength = 0;
+                    previousWasCarriageReturn = false;
+                }
+                else
+                {
+                    currentLineLength++;
+                    previousWasCarriageReturn = true;
+                }
+            }
+            else if (text[i] == '\n')
+            {
+                previousWasCarriageReturn = false;
+                currentLineLength++;
+                result.Add(currentLineLength);
+                currentLineLength = 0;
+            }
+            else
+            {
+                currentLineLength++;
+                previousWasCarriageReturn = false;
+            }
+        }
+
+        result.Add(currentLineLength);
+
+        if (previousWasCarriageReturn)
+        {
+            result.Add(0);
+        }
+
+        return result.ToArray();
     }
 
     private static string EnsureCrLf(string text)
