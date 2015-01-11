@@ -9,7 +9,7 @@ TextAndWhitespace
 Opens every *.cs file (or other pattern) in the current directory and all subdirectories and:
   1. Saves the file with UTF8 encoding with signature (BOM)
   2. Converts all line endings to CRLF (Windows)
-  3. Remove trailing whitespace from every line
+  3. Removes trailing whitespace from every line
 
 SortProjectItems
 ----------------
