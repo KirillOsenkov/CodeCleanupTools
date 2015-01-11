@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -51,7 +51,7 @@ class Program
     {
         Console.WriteLine(@"Usage: SortProjectItems.exe [<project file>|/r]
        Sorts the ItemGroup contents of an MSBuild project file alphabetically.
-       If the project file is not specified sorts all files in the current 
+       If the project file is not specified sorts all files in the current
        directory.
 
 SortProjectItems.exe /r

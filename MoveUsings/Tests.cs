@@ -99,11 +99,11 @@ namespace N
 original:
 @"namespace N
 {
-      
+
     using System; // preserve
-  
+
     using System.Collections.Generic;
-  
+
 }
 ",
 
@@ -115,7 +115,7 @@ using System.Collections.Generic;
 
 namespace N
 {
-  
+
 }
 ");
     }

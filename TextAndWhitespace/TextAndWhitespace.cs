@@ -14,7 +14,7 @@ class TextAndWhitespace
             return;
         }
 
-        var folder = args[0];
+        var folder = Environment.CurrentDirectory;
         var files = Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories);
         foreach (var file in files)
         {
