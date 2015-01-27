@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TextAndWhitespace", "TextAn
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LOC", "LOC\LOC.csproj", "{941B8B48-3D74-4EAA-A852-5F4D2EE3561B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileTypes", "FileTypes\FileTypes.csproj", "{9C965CE4-2E58-4EF2-9A07-1EB132A815E4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +54,10 @@ Global
 		{941B8B48-3D74-4EAA-A852-5F4D2EE3561B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{941B8B48-3D74-4EAA-A852-5F4D2EE3561B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{941B8B48-3D74-4EAA-A852-5F4D2EE3561B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C965CE4-2E58-4EF2-9A07-1EB132A815E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C965CE4-2E58-4EF2-9A07-1EB132A815E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C965CE4-2E58-4EF2-9A07-1EB132A815E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C965CE4-2E58-4EF2-9A07-1EB132A815E4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Do not remove this test for UTF-8: if ??? doesn?t appear as greek uppercase omega letter enclosed in quotation marks, you should use an editor that supports UTF-8, not this one. -->
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <!-- Read this before publishing packages to chocolatey.org: https://github.com/chocolatey/chocolatey/wiki/CreatePackages -->
+    <id>filetypes</id>
+    <title>List all the file types/extensions present in current directory and all subdirectories.</title>
+    <version>1.0.0</version>
+    <authors>Kirill Osenkov</authors>
+    <owners>KirillOsenkov</owners>
+    <summary>List all the file types/extensions present in current directory and all subdirectories.</summary>
+    <description></description>
+    <projectUrl>http://github.com/kirillosenkov/codecleanuptools</projectUrl>
+    <tags>file type extension list tool</tags>
+    <copyright></copyright>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <releaseNotes>Initial release</releaseNotes>
+  </metadata>
+  <files>
+    <file src="..\bin\Debug\filetypes.exe" target="." />
+  </files>
+</package>
