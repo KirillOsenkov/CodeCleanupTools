@@ -33,8 +33,12 @@ class TextAndWhitespace
             }
 
             newText = EnsureCrLf(newText);
-            newText = RemoveConsecutiveEmptyLines(newText);
-            newText = TrimTrailingWhitespaceFromEveryLine(newText);
+
+            if (".cs".Equals(Path.GetExtension(file), StringComparison.OrdinalIgnoreCase))
+            {
+                newText = RemoveConsecutiveEmptyLines(newText);
+                newText = TrimTrailingWhitespaceFromEveryLine(newText);
+            }
 
             if (newText != text)
             {
