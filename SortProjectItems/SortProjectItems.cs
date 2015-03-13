@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml.Linq;
 
 class Program
@@ -75,7 +76,20 @@ SortProjectItems.exe /r
             SortItemGroup(itemGroup);
         }
 
-        document.Save(filename, SaveOptions.None);
+        var originalText = File.ReadAllText(filename);
+        string newText = null;
+
+        using (var memoryStream = new MemoryStream())
+        using (var textWriter = new StreamWriter(memoryStream, Encoding.UTF8))
+        {
+            document.Save(textWriter, SaveOptions.None);
+            newText = Encoding.UTF8.GetString(memoryStream.ToArray());
+        }
+
+        if (newText != originalText)
+        {
+            File.WriteAllText(filename, newText);
+        }
     }
 
     private static void CombineCompatibleItemGroups(XElement[] itemGroups, List<XElement> processedItemGroups)
