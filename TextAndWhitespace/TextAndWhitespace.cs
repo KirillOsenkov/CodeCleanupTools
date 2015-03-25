@@ -68,11 +68,16 @@ class TextAndWhitespace
 
     private static void PrintHelp()
     {
-        Console.WriteLine(@"Usage: TextAndWhitespace.exe
-       For every .cs file in the current directory and all subdirectories:
-        * Converts all line endings to CRLF
-        * Removes two consecutive empty lines leaving just one
-        * Removes trailing spaces from every line");
+        Console.WriteLine(@"Usage: TextAndWhitespace.exe [pattern]
+
+    * Converts all line endings to CRLF for every file in the current directory and all subdirectories
+    * Sets the encoding to UTF8 with BOM
+    * Ensures the file ends with a line break
+
+Pattern is optional and defaults to *.cs. If the pattern is *.cs, the tool additionally:
+
+    * If there are consecutive empty lines it replaces them with just one
+    * Removes trailing spaces from every line");
     }
 
     public static bool IsGeneratedCode(string text)
