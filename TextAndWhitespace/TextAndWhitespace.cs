@@ -17,6 +17,12 @@ class TextAndWhitespace
         var pattern = "*.cs";
         if (args.Length == 1)
         {
+            if (args[0] == "/?" || args[0] == "-h" || args[0] == "-help" || args[0] == "/help")
+            {
+                PrintHelp();
+                return;
+            }
+
             pattern = args[0];
         }
 

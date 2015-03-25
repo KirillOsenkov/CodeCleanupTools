@@ -49,11 +49,13 @@ class FormatSolution
                 continue;
             }
 
-            Write("Formatting: " + document.FilePath);
+            var newDocument = Formatter.FormatAsync(document).GetAwaiter().GetResult();
+            if (newDocument != document)
+            {
+                Write("Formatting: " + document.FilePath);
+            }
 
-            document = Formatter.FormatAsync(document).GetAwaiter().GetResult();
-
-            project = document.Project;
+            project = newDocument.Project;
             solution = project.Solution;
         }
 
