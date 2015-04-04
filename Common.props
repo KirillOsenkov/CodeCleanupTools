@@ -6,5 +6,6 @@
     <OutputPath>$(SolutionDir)\bin\$(Configuration)\</OutputPath>
     <OutDir>$(OutputPath)</OutDir>
     <IntermediateOutputPath>$(SolutionDir)\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
+    <UseCommonOutputDirectory>True</UseCommonOutputDirectory>
   </PropertyGroup>
 </Project>
