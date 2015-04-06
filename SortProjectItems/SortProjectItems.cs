@@ -60,9 +60,9 @@ SortProjectItems.exe /r
        subdirectories.");
     }
 
-    static void SortProjectItems(string filename)
+    static void SortProjectItems(string filePath)
     {
-        XDocument document = XDocument.Load(filename, LoadOptions.PreserveWhitespace | LoadOptions.SetLineInfo);
+        XDocument document = XDocument.Load(filePath, LoadOptions.PreserveWhitespace | LoadOptions.SetLineInfo);
         XNamespace msBuildNamespace = document.Root.GetDefaultNamespace();
         XName itemGroupName = XName.Get("ItemGroup", msBuildNamespace.NamespaceName);
         var itemGroups = document.Root.Descendants(itemGroupName).ToArray();
@@ -76,20 +76,48 @@ SortProjectItems.exe /r
             SortItemGroup(itemGroup);
         }
 
-        var originalText = File.ReadAllText(filename);
-        string newText = null;
+        var originalBytes = File.ReadAllBytes(filePath);
+        byte[] newBytes = null;
 
         using (var memoryStream = new MemoryStream())
         using (var textWriter = new StreamWriter(memoryStream, Encoding.UTF8))
         {
             document.Save(textWriter, SaveOptions.None);
-            newText = Encoding.UTF8.GetString(memoryStream.ToArray());
+            newBytes = memoryStream.ToArray();
         }
 
-        if (newText != originalText)
+        if (!AreEqual(originalBytes, newBytes))
         {
-            File.WriteAllText(filename, newText);
+            File.WriteAllBytes(filePath, newBytes);
         }
+    }
+
+    private static bool AreEqual(byte[] left, byte[] right)
+    {
+        if (left == null)
+        {
+            return right == null;
+        }
+
+        if (right == null)
+        {
+            return false;
+        }
+
+        if (left.Length != right.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < left.Length; i++)
+        {
+            if (left[i] != right[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static void CombineCompatibleItemGroups(XElement[] itemGroups, List<XElement> processedItemGroups)
