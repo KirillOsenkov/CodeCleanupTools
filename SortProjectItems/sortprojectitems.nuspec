@@ -5,7 +5,7 @@
     <!-- Read this before publishing packages to chocolatey.org: https://github.com/chocolatey/chocolatey/wiki/CreatePackages -->
     <id>sortprojectitems</id>
     <title>Sort Project Items</title>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <authors>Kirill Osenkov</authors>
     <owners>KirillOsenkov</owners>
     <summary>Sorts MSBuild project items in ItemGroup elements of .csproj and .vbproj files to simplify merging project files.</summary>
@@ -15,7 +15,7 @@
     <copyright></copyright>
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <releaseNotes>Initial release</releaseNotes>
+    <releaseNotes>Don't overwrite the file if same contents - avoids changing the files timestamp.</releaseNotes>
   </metadata>
   <files>
     <file src="..\bin\Debug\SortProjectItems.exe" target="." />
