@@ -5,17 +5,17 @@
     <!-- Read this before publishing packages to chocolatey.org: https://github.com/chocolatey/chocolatey/wiki/CreatePackages -->
     <id>sortprojectitems</id>
     <title>Sort Project Items</title>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <authors>Kirill Osenkov</authors>
     <owners>KirillOsenkov</owners>
     <summary>Sorts MSBuild project items in ItemGroup elements of .csproj and .vbproj files to simplify merging project files.</summary>
     <description>Sorts MSBuild project items in ItemGroup elements of .csproj and .vbproj files to simplify merging project files.</description>
     <projectUrl>http://github.com/kirillosenkov/codecleanuptools</projectUrl>
-    <tags>sortprojectitems</tags>
+    <tags>sortprojectitems MSBuild CSProj Project Cleanup</tags>
     <copyright></copyright>
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <releaseNotes>Don't overwrite the file if same contents - avoids changing the files timestamp.</releaseNotes>
+    <releaseNotes>Fix a bug so that SortProjectItems doesn't touch ItemGroups inside Choose or Target elements.</releaseNotes>
   </metadata>
   <files>
     <file src="..\bin\Debug\SortProjectItems.exe" target="." />
