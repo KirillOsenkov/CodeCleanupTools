@@ -65,7 +65,9 @@ SortProjectItems.exe /r
         XDocument document = XDocument.Load(filePath, LoadOptions.PreserveWhitespace | LoadOptions.SetLineInfo);
         XNamespace msBuildNamespace = document.Root.GetDefaultNamespace();
         XName itemGroupName = XName.Get("ItemGroup", msBuildNamespace.NamespaceName);
-        var itemGroups = document.Root.Descendants(itemGroupName).ToArray();
+
+        // only consider the top-level item groups, otherwise stuff inside Choose, Targets etc. will be broken
+        var itemGroups = document.Root.Elements(itemGroupName).ToArray();
 
         var processedItemGroups = new List<XElement>();
 
