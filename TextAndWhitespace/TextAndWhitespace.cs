@@ -14,7 +14,7 @@ class TextAndWhitespace
             return;
         }
         
-        var pattern = "*.cs";
+        var pattern = "*.*";
         if (args.Length == 1)
         {
             if (args[0] == "/?" || args[0] == "-h" || args[0] == "-help" || args[0] == "/help")
@@ -30,14 +30,19 @@ class TextAndWhitespace
         var files = Directory.GetFiles(folder, pattern, SearchOption.AllDirectories);
         foreach (var file in files)
         {
-            var text = File.ReadAllText(file);
-            var newText = text;
-
-            if (IsGeneratedCode(text))
+            if (IsBinary(file))
             {
                 continue;
             }
 
+            var text = File.ReadAllText(file);
+
+            if (IsGeneratedCode(text) || text.IndexOf('\0') > -1)
+            {
+                continue;
+            }
+
+            var newText = text;
             newText = EnsureCrLf(newText);
 
             if (".cs".Equals(Path.GetExtension(file), StringComparison.OrdinalIgnoreCase))
@@ -51,6 +56,29 @@ class TextAndWhitespace
                 File.WriteAllText(file, newText, Encoding.UTF8);
             }
         }
+    }
+
+    private static readonly HashSet<string> binaryExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "exe",
+        "dll",
+        "pdb",
+        "zip",
+        "png",
+        "jpg",
+        "snk",
+        "ico",
+        "ani",
+        "gif",
+        "ttf",
+        "pfx",
+        "lex",
+    };
+
+    private static bool IsBinary(string file)
+    {
+        var extension = Path.GetExtension(file).TrimStart('.');
+        return binaryExtensions.Contains(extension);
     }
 
     public static string TrimTrailingWhitespaceFromEveryLine(string text)
