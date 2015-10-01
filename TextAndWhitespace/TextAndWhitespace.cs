@@ -6,6 +6,30 @@ using System.Text;
 
 class TextAndWhitespace
 {
+    private static readonly HashSet<string> trimTrailingWhitespaceFromExtensions = new HashSet<string>
+    {
+        "cs",
+        "csproj",
+        "xaml",
+    };
+
+    private static readonly HashSet<string> binaryExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "exe",
+        "dll",
+        "pdb",
+        "zip",
+        "png",
+        "jpg",
+        "snk",
+        "ico",
+        "ani",
+        "gif",
+        "ttf",
+        "pfx",
+        "lex",
+    };
+
     static void Main(string[] args)
     {
         if (args.Length > 1)
@@ -13,7 +37,7 @@ class TextAndWhitespace
             PrintHelp();
             return;
         }
-        
+
         var pattern = "*.*";
         if (args.Length == 1)
         {
@@ -45,9 +69,15 @@ class TextAndWhitespace
             var newText = text;
             newText = EnsureCrLf(newText);
 
-            if (".cs".Equals(Path.GetExtension(file), StringComparison.OrdinalIgnoreCase))
+            var extension = Path.GetExtension(file).TrimStart('.').ToLowerInvariant();
+
+            if (extension == "cs")
             {
                 newText = RemoveConsecutiveEmptyLines(newText);
+            }
+
+            if (trimTrailingWhitespaceFromExtensions.Contains(extension))
+            {
                 newText = TrimTrailingWhitespaceFromEveryLine(newText);
             }
 
@@ -57,23 +87,6 @@ class TextAndWhitespace
             }
         }
     }
-
-    private static readonly HashSet<string> binaryExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        "exe",
-        "dll",
-        "pdb",
-        "zip",
-        "png",
-        "jpg",
-        "snk",
-        "ico",
-        "ani",
-        "gif",
-        "ttf",
-        "pfx",
-        "lex",
-    };
 
     private static bool IsBinary(string file)
     {
@@ -98,14 +111,23 @@ class TextAndWhitespace
     {
         Console.WriteLine(@"Usage: TextAndWhitespace.exe [pattern]
 
-    * Converts all line endings to CRLF for every file in the current directory and all subdirectories
+    * Converts all line endings to CRLF for every file in the current
+      directory and all subdirectories
     * Sets the encoding to UTF8 with BOM
     * Ensures the file ends with a line break
 
-Pattern is optional and defaults to *.cs. If the pattern is *.cs, the tool additionally:
+Pattern is optional and defaults to *.cs.
 
-    * If there are consecutive empty lines it replaces them with just one
-    * Removes trailing spaces from every line");
+For .cs, .csproj and .xaml files: 
+
+    * Removes trailing spaces from every line
+
+For .cs files the tool additionally:
+
+    * replaces two consecutive empty lines with just one 
+      (WARNING: the tool is currently blind and will mutate contents 
+      of string literals as well)
+");
     }
 
     public static bool IsGeneratedCode(string text)
@@ -124,13 +146,13 @@ Pattern is optional and defaults to *.cs. If the pattern is *.cs, the tool addit
             if (!includeLineBreaksInLines)
             {
                 if (lineLength >= 2 &&
-                    text[position + lineLength - 2] == '\r' && 
+                    text[position + lineLength - 2] == '\r' &&
                     text[position + lineLength - 1] == '\n')
                 {
                     lineLength -= 2;
                 }
                 else if (lineLength >= 1 &&
-                    (text[position + lineLength - 1] == '\r' || 
+                    (text[position + lineLength - 1] == '\r' ||
                     text[position + lineLength - 1] == '\n'))
                 {
                     lineLength--;
