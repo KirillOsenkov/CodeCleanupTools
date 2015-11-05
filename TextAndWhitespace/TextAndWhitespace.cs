@@ -1,14 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using static System.Console;
 using System.IO;
 using System.Linq;
 using System.Text;
 
 class TextAndWhitespace
 {
+    private static readonly HashSet<string> removeConsecutiveEmptyLinesFromExtensions = new HashSet<string>
+    {
+        "cs",
+        "ps1",
+        "psm1",
+    };
+
     private static readonly HashSet<string> trimTrailingWhitespaceFromExtensions = new HashSet<string>
     {
         "cs",
+        "ps1",
+        "psm1",
         "csproj",
         "xaml",
     };
@@ -61,6 +71,15 @@ class TextAndWhitespace
 
             var text = File.ReadAllText(file);
 
+            if (GetFileEncoding(file) == Encoding.Default)
+            {
+                if (containsExtendedAscii(text, file))
+                {
+                    WriteLine($"Skipped: Extended ASCII characters: {file}");
+                    continue;
+                }
+            }
+
             if (IsGeneratedCode(text) || text.IndexOf('\0') > -1)
             {
                 continue;
@@ -71,7 +90,7 @@ class TextAndWhitespace
 
             var extension = Path.GetExtension(file).TrimStart('.').ToLowerInvariant();
 
-            if (extension == "cs")
+            if (removeConsecutiveEmptyLinesFromExtensions.Contains(extension))
             {
                 newText = RemoveConsecutiveEmptyLines(newText);
             }
@@ -85,6 +104,28 @@ class TextAndWhitespace
             {
                 File.WriteAllText(file, newText, Encoding.UTF8);
             }
+        }
+    }
+
+    private static bool containsExtendedAscii(string text, string file)
+    {
+        foreach (var ch in text)
+        {
+            if (ch >= 0x80 || ch <= 0xFF)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Encoding GetFileEncoding(string file)
+    {
+        using (var sr = new StreamReader(file, Encoding.Default))
+        {
+            sr.Read();
+            return sr.CurrentEncoding;
         }
     }
 
