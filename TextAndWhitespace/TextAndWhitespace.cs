@@ -73,7 +73,7 @@ class TextAndWhitespace
 
             if (GetFileEncoding(file) == Encoding.Default)
             {
-                if (containsExtendedAscii(text, file))
+                if (ContainsExtendedAscii(text, file))
                 {
                     WriteLine($"Skipped: Extended ASCII characters: {file}");
                     continue;
@@ -107,7 +107,7 @@ class TextAndWhitespace
         }
     }
 
-    private static bool containsExtendedAscii(string text, string file)
+    private static bool ContainsExtendedAscii(string text, string file)
     {
         foreach (var ch in text)
         {
