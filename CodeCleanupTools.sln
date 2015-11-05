@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SortProjectItems", "SortProjectItems\SortProjectItems.csproj", "{C4A2CF09-E004-4769-B280-6298A6C0876C}"
 EndProject
@@ -25,6 +25,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileTypes", "FileTypes\FileTypes.csproj", "{9C965CE4-2E58-4EF2-9A07-1EB132A815E4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ListBinaryInfo", "ListBinaryInfo\ListBinaryInfo.csproj", "{DD4CDF3C-806F-44C7-ADF6-2F73CAC199AD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindDuplicateFiles", "FindDuplicateFiles\FindDuplicateFiles.csproj", "{F71DD4B8-E30D-4548-A59E-CCEAF012DD24}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,6 +66,10 @@ Global
 		{DD4CDF3C-806F-44C7-ADF6-2F73CAC199AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DD4CDF3C-806F-44C7-ADF6-2F73CAC199AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DD4CDF3C-806F-44C7-ADF6-2F73CAC199AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F71DD4B8-E30D-4548-A59E-CCEAF012DD24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F71DD4B8-E30D-4548-A59E-CCEAF012DD24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F71DD4B8-E30D-4548-A59E-CCEAF012DD24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F71DD4B8-E30D-4548-A59E-CCEAF012DD24}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
