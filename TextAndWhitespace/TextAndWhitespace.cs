@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using static System.Console;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -64,69 +63,54 @@ class TextAndWhitespace
         var files = Directory.GetFiles(folder, pattern, SearchOption.AllDirectories);
         foreach (var file in files)
         {
-            if (IsBinary(file))
-            {
-                continue;
-            }
-
-            var text = File.ReadAllText(file);
-
-            if (GetFileEncoding(file) == Encoding.Default)
-            {
-                if (ContainsExtendedAscii(text, file))
-                {
-                    WriteLine($"Skipped: Extended ASCII characters: {file}");
-                    continue;
-                }
-            }
-
-            if (IsGeneratedCode(text) || text.IndexOf('\0') > -1)
-            {
-                continue;
-            }
-
-            var newText = text;
-            newText = EnsureCrLf(newText);
-
-            var extension = Path.GetExtension(file).TrimStart('.').ToLowerInvariant();
-
-            if (removeConsecutiveEmptyLinesFromExtensions.Contains(extension))
-            {
-                newText = RemoveConsecutiveEmptyLines(newText);
-            }
-
-            if (trimTrailingWhitespaceFromExtensions.Contains(extension))
-            {
-                newText = TrimTrailingWhitespaceFromEveryLine(newText);
-            }
-
-            if (newText != text)
-            {
-                File.WriteAllText(file, newText, Encoding.UTF8);
-            }
+            ProcessFile(file);
         }
     }
 
-    private static bool ContainsExtendedAscii(string text, string file)
+    public static void ProcessFile(string file)
     {
-        foreach (var ch in text)
+        if (IsBinary(file))
         {
-            if (ch >= 0x80 || ch <= 0xFF)
-            {
-                return true;
-            }
+            return;
         }
 
-        return false;
+        var text = File.ReadAllText(file);
+        if (text.Contains('\uFFFD'))
+        {
+            // it's not Unicode, let's try Default
+            text = File.ReadAllText(file, Encoding.Default);
+        }
+
+        var extension = Path.GetExtension(file).TrimStart('.').ToLowerInvariant();
+
+        var newText = ProcessText(text, extension);
+        if (newText != text)
+        {
+            File.WriteAllText(file, newText);
+        }
     }
 
-    private static Encoding GetFileEncoding(string file)
+    public static string ProcessText(string text, string extension)
     {
-        using (var sr = new StreamReader(file, Encoding.Default))
+        if (IsGeneratedCode(text) || text.IndexOf('\0') > -1)
         {
-            sr.Read();
-            return sr.CurrentEncoding;
+            return text;
         }
+
+        var newText = text;
+        newText = EnsureCrLf(newText);
+
+        if (removeConsecutiveEmptyLinesFromExtensions.Contains(extension))
+        {
+            newText = RemoveConsecutiveEmptyLines(newText);
+        }
+
+        if (trimTrailingWhitespaceFromExtensions.Contains(extension))
+        {
+            newText = TrimTrailingWhitespaceFromEveryLine(newText);
+        }
+
+        return newText;
     }
 
     private static bool IsBinary(string file)
