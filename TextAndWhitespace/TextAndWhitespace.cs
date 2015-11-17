@@ -14,6 +14,14 @@ class TextAndWhitespace
         "psm1",
     };
 
+    private static readonly HashSet<string> trimLeadingTabsFromExtensions = new HashSet<string>
+    {
+        "cs",
+        "ps1",
+        "psm1",
+        "xaml",
+    };
+
     private static readonly HashSet<string> trimTrailingWhitespaceFromExtensions = new HashSet<string>
     {
         "cs",
@@ -73,11 +81,11 @@ class TextAndWhitespace
 
             if (GetFileEncoding(file) == Encoding.Default)
             {
-                if (containsExtendedAscii(text, file))
-                {
-                    WriteLine($"Skipped: Extended ASCII characters: {file}");
-                    continue;
-                }
+                //if (containsExtendedAscii(text, file))
+                //{
+                //    WriteLine($"Skipped: Extended ASCII characters: {file}");
+                //    continue;
+                //}
             }
 
             if (IsGeneratedCode(text) || text.IndexOf('\0') > -1)
@@ -93,6 +101,11 @@ class TextAndWhitespace
             if (removeConsecutiveEmptyLinesFromExtensions.Contains(extension))
             {
                 newText = RemoveConsecutiveEmptyLines(newText);
+            }
+
+            if (trimLeadingTabsFromExtensions.Contains(extension))
+            {
+                newText = TrimLeadingTabsFromEveryLine(newText);
             }
 
             if (trimTrailingWhitespaceFromExtensions.Contains(extension))
@@ -133,6 +146,30 @@ class TextAndWhitespace
     {
         var extension = Path.GetExtension(file).TrimStart('.');
         return binaryExtensions.Contains(extension);
+    }
+
+    public static string TrimLeadingTabsFromEveryLine(string text)
+    {
+        IEnumerable<string> lines = GetLines(text, true);
+        string newText = string.Empty;
+
+        foreach (var line in lines)
+        {
+            var firstNonSpace = line.IndexOfFirstNonSpaceCharacter();
+            if (firstNonSpace == -1)
+            {
+                newText += line;
+            }
+            else
+            {
+                var s1 = line.Substring(0, firstNonSpace);
+                var s2 = line.Substring(firstNonSpace);
+                var s3 = s1.Replace("\t", "    ");
+                newText += s3 + s2;
+            }
+        }
+
+        return newText;
     }
 
     public static string TrimTrailingWhitespaceFromEveryLine(string text)
