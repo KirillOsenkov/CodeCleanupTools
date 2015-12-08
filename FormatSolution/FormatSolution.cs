@@ -1,9 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel.Composition.Hosting;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.MSBuild;
