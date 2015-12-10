@@ -26,6 +26,8 @@ class TextAndWhitespace
     {
         { "cs", 4 },
         { "csproj", 2 },
+        { "ps1", 4 },
+        { "psm1", 4 },
         { "xaml", 2 },
     };
 
@@ -126,7 +128,7 @@ class TextAndWhitespace
         return newText;
     }
 
-    private static string ReplaceLeadingTabsWithSpaces(string text, int spacesPerTab)
+    public static string ReplaceLeadingTabsWithSpaces(string text, int spacesPerTab)
     {
         var sb = new StringBuilder(text.Length);
         var spaces = new string(' ', spacesPerTab);
@@ -150,6 +152,10 @@ class TextAndWhitespace
                 {
                     sb.Append(c);
                 }
+            }
+            else if (c == ' ')
+            {
+                sb.Append(c);
             }
             else
             {
