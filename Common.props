@@ -7,5 +7,6 @@
     <OutDir>$(OutputPath)</OutDir>
     <IntermediateOutputPath>$(SolutionDir)\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
     <UseCommonOutputDirectory>False</UseCommonOutputDirectory>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 </Project>
