@@ -6,20 +6,27 @@ using System.Text;
 
 class TextAndWhitespace
 {
-    private static readonly HashSet<string> removeConsecutiveEmptyLinesFromExtensions = new HashSet<string>
+    private static readonly HashSet<string> removeConsecutiveEmptyLinesFromExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "cs",
         "ps1",
         "psm1",
     };
 
-    private static readonly HashSet<string> trimTrailingWhitespaceFromExtensions = new HashSet<string>
+    private static readonly HashSet<string> trimTrailingWhitespaceFromExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "cs",
         "ps1",
         "psm1",
         "csproj",
         "xaml",
+    };
+
+    private static readonly Dictionary<string, int> replaceLeadingTabsWithSpaces = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+    {
+        { "cs", 4 },
+        { "csproj", 2 },
+        { "xaml", 2 },
     };
 
     private static readonly HashSet<string> binaryExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -100,6 +107,12 @@ class TextAndWhitespace
         var newText = text;
         newText = EnsureCrLf(newText);
 
+        int spaces = 4;
+        if (replaceLeadingTabsWithSpaces.TryGetValue(extension, out spaces))
+        {
+            newText = ReplaceLeadingTabsWithSpaces(newText, spaces);
+        }
+
         if (removeConsecutiveEmptyLinesFromExtensions.Contains(extension))
         {
             newText = RemoveConsecutiveEmptyLines(newText);
@@ -111,6 +124,41 @@ class TextAndWhitespace
         }
 
         return newText;
+    }
+
+    private static string ReplaceLeadingTabsWithSpaces(string text, int spacesPerTab)
+    {
+        var sb = new StringBuilder(text.Length);
+        var spaces = new string(' ', spacesPerTab);
+
+        bool atBeginningOfLine = true;
+        for (int i = 0; i < text.Length; i++)
+        {
+            char c = text[i];
+            if (c == '\r' || c == '\n')
+            {
+                atBeginningOfLine = true;
+                sb.Append(c);
+            }
+            else if (c == '\t')
+            {
+                if (atBeginningOfLine)
+                {
+                    sb.Append(spaces);
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            else
+            {
+                atBeginningOfLine = false;
+                sb.Append(c);
+            }
+        }
+
+        return sb.ToString();
     }
 
     private static bool IsBinary(string file)
