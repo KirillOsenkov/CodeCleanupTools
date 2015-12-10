@@ -115,14 +115,14 @@ class TextAndWhitespace
             newText = ReplaceLeadingTabsWithSpaces(newText, spaces);
         }
 
-        if (removeConsecutiveEmptyLinesFromExtensions.Contains(extension))
-        {
-            newText = RemoveConsecutiveEmptyLines(newText);
-        }
-
         if (trimTrailingWhitespaceFromExtensions.Contains(extension))
         {
             newText = TrimTrailingWhitespaceFromEveryLine(newText);
+        }
+
+        if (removeConsecutiveEmptyLinesFromExtensions.Contains(extension))
+        {
+            newText = RemoveConsecutiveEmptyLines(newText);
         }
 
         return newText;
