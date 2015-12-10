@@ -8,11 +8,9 @@ class TextAndWhitespace
 {
     private static readonly HashSet<string> removeConsecutiveEmptyLinesFromExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        "cs",
         "ps1",
         "psm1",
     };
-
     private static readonly HashSet<string> trimTrailingWhitespaceFromExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "cs",

@@ -97,6 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FormatSolution.cs" />
+    <Compile Include="RemoveConsecutiveEmptyLines.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

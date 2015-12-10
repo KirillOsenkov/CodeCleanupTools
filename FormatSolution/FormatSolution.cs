@@ -51,6 +51,8 @@ class FormatSolution
                 Write("Formatting: " + document.FilePath);
             }
 
+            newDocument = RemoveConsecutiveEmptyLinesWorker.Process(newDocument);
+
             project = newDocument.Project;
             solution = project.Solution;
         }
