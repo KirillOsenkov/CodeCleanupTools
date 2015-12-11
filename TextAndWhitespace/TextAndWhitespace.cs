@@ -67,11 +67,26 @@ class TextAndWhitespace
         }
 
         var folder = Environment.CurrentDirectory;
-        var files = Directory.GetFiles(folder, pattern, SearchOption.AllDirectories);
-        foreach (var file in files)
+        var fileInfos = GetNonHiddenFiles(new DirectoryInfo(folder), pattern);
+        foreach (var file in fileInfos)
         {
-            ProcessFile(file);
+            ProcessFile(file.FullName);
         }
+    }
+
+    private static IList<FileInfo> GetNonHiddenFiles(DirectoryInfo baseDirectory, string pattern)
+    {
+        var fileInfos = new List<System.IO.FileInfo>();
+        fileInfos.AddRange(baseDirectory.GetFiles(pattern, SearchOption.TopDirectoryOnly).Where(f => (f.Attributes & FileAttributes.Hidden) == 0));
+
+        // skip hidden directories (like .git) and directories that start with '.'
+        // that are not hidden (like .nuget).
+        foreach (var directory in baseDirectory.GetDirectories("*.*", SearchOption.TopDirectoryOnly).Where(w => (w.Attributes & FileAttributes.Hidden) == 0 && !w.Name.StartsWith(".")))
+        {
+            fileInfos.AddRange(GetNonHiddenFiles(directory, pattern));
+        }
+
+        return fileInfos;
     }
 
     public static void ProcessFile(string file)
@@ -179,10 +194,7 @@ class TextAndWhitespace
         return text;
     }
 
-    private static string RemoveConsecutiveEmptyLines(string text)
-    {
-        return text.Replace("\n\r\n\r", "\n\r");
-    }
+    private static string RemoveConsecutiveEmptyLines(string text) => text.Replace("\n\r\n\r", "\n\r");
 
     private static void PrintHelp()
     {
@@ -207,10 +219,7 @@ For .cs files the tool additionally:
 ");
     }
 
-    public static bool IsGeneratedCode(string text)
-    {
-        return text.Contains("This code was generated");
-    }
+    public static bool IsGeneratedCode(string text) => text.Contains("This code was generated");
 
     public static string[] GetLines(string text, bool includeLineBreaksInLines = false)
     {
