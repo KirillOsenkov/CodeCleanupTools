@@ -11,7 +11,6 @@ public class RemoveConsecutiveEmptyLinesWorker
         if (newRoot != root)
         {
             document = document.WithSyntaxRoot(newRoot);
-            FormatSolution.Write("Removing empty lines: " + document.FilePath);
         }
 
         return document;

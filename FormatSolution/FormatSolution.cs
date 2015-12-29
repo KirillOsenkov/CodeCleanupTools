@@ -46,14 +46,18 @@ class FormatSolution
             }
 
             var newDocument = Formatter.FormatAsync(document).GetAwaiter().GetResult();
-            if (newDocument != document)
+            if (newDocument != document && newDocument.GetTextAsync().Result.ToString() != document.GetTextAsync().Result.ToString())
             {
                 Write("Formatting: " + document.FilePath);
             }
 
-            newDocument = RemoveConsecutiveEmptyLinesWorker.Process(newDocument);
+            var newDocument2 = RemoveConsecutiveEmptyLinesWorker.Process(newDocument);
+            if (newDocument2 != newDocument && newDocument2.GetTextAsync().Result.ToString() != newDocument.GetTextAsync().Result.ToString())
+            {
+                Write("Removing empty lines: " + document.FilePath);
+            }
 
-            project = newDocument.Project;
+            project = newDocument2.Project;
             solution = project.Solution;
         }
 
