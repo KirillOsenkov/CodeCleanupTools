@@ -4,13 +4,16 @@ A set of command-line tools to cleanup C# and VB source code.
 
 **WARNING: use these tools at your own risk**. The author and maintainers are not responsible for any damage caused to your files as a result of using these tools. Always manually code review changes made by the tools and always use a version control system.
 
+A recommended pattern is that you fork this repo for a codebase and tweak to the guidelines of your codebase. It tries to use reasonable defaults (4 spaces, no tabs, no-BOM, CRLF, etc)
+
 TextAndWhitespace
 -----------------
 Opens every *.cs file (or other pattern) in the current directory and all subdirectories and:
-  1. Saves the file with UTF8 encoding with signature (BOM)
+  1. Saves the file with UTF8 encoding without signature (no-BOM)
   2. Converts all line endings to CRLF (Windows)
   3. Removes trailing whitespace from every line
-  4. Removes subsequent empty lines (StyleCop fix) - currently if there's 3 or more consecutive empty lines, it just removes one
+  4. Replaces leading tabs with 4 spaces
+  5. Collapses multiple consecutive empty lines into one
 
 SortProjectItems
 ----------------
