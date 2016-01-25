@@ -11,6 +11,7 @@ class TextAndWhitespace
         "ps1",
         "psm1",
     };
+
     private static readonly HashSet<string> trimTrailingWhitespaceFromExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "cs",
@@ -202,20 +203,10 @@ class TextAndWhitespace
 
     * Converts all line endings to CRLF for every file in the current
       directory and all subdirectories
-    * Sets the encoding to UTF8 with BOM
-    * Ensures the file ends with a line break
+    * Sets the encoding to UTF8 without signature (no-BOM)
+    * Replaces leading tabs with spaces
+    * Removes trailing whitespace from lines
 
-Pattern is optional and defaults to *.cs.
-
-For .cs, .csproj and .xaml files: 
-
-    * Removes trailing spaces from every line
-
-For .cs files the tool additionally:
-
-    * replaces two consecutive empty lines with just one 
-      (WARNING: the tool is currently blind and will mutate contents 
-      of string literals as well)
 ");
     }
 
