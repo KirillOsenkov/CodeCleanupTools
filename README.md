@@ -35,6 +35,8 @@ FormatSolution
 --------------
 Command line tool to load an .sln file and format every *.cs and *.vb file in the solution using the Visual Studio default formatting settings (uses Roslyn). Currently requires Visual Studio 2015 to be installed on the machine (for MSBuild 14). Saves every file back to disk.
 
+Additionally the tool collapses multiple consecutive empty lines into a single empty line (a fix for StyleCop rule http://www.stylecop.com/docs/SA1507.html).
+
 **Usage**:
 formatsolution <path-to-sln>.sln
 
