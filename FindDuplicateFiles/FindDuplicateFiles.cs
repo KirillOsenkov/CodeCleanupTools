@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Windows.Forms;
 
 internal class FindDuplicateFiles
 {
@@ -47,6 +47,7 @@ internal class FindDuplicateFiles
         }
 
         Console.WriteLine(sb.ToString());
+        Clipboard.SetText(sb.ToString());
     }
 
     public static string ByteArrayToHexString(byte[] bytes, int digits = 0)
