@@ -30,7 +30,7 @@ public class MoveUsings
     {
         var text = File.ReadAllText(filePath);
         text = MoveUsingsToTop(text);
-        File.WriteAllText(filePath, text, Encoding.UTF8);
+        File.WriteAllText(filePath, text);
     }
 
     public static string MoveUsingsToTop(string text)
