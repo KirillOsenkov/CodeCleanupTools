@@ -68,6 +68,7 @@ class FormatSolution
     {
         lock (typeof(Console))
         {
+            var oldColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write(DateTime.Now.ToString("HH:mm:ss") + " ");
             Console.ForegroundColor = color;
@@ -76,6 +77,7 @@ class FormatSolution
             {
                 Console.ForegroundColor = ConsoleColor.Gray;
             }
+            Console.ForegroundColor = oldColor;
         }
     }
 }
