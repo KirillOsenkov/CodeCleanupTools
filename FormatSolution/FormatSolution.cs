@@ -73,10 +73,6 @@ class FormatSolution
             Console.Write(DateTime.Now.ToString("HH:mm:ss") + " ");
             Console.ForegroundColor = color;
             Console.WriteLine(message);
-            if (color != ConsoleColor.Gray)
-            {
-                Console.ForegroundColor = ConsoleColor.Gray;
-            }
             Console.ForegroundColor = oldColor;
         }
     }
