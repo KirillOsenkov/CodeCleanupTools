@@ -30,6 +30,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindDuplicateFiles", "FindD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindConflictingReferences", "FindConflictingReferences\FindConflictingReferences.csproj", "{B4012437-18E5-4C06-B0A1-79292A5CFEA3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoveDuplicateItems", "RemoveDuplicateItems\RemoveDuplicateItems.csproj", "{A84EF45A-497D-4949-AEAC-69E2BF73C97F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -76,6 +78,10 @@ Global
 		{B4012437-18E5-4C06-B0A1-79292A5CFEA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4012437-18E5-4C06-B0A1-79292A5CFEA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4012437-18E5-4C06-B0A1-79292A5CFEA3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A84EF45A-497D-4949-AEAC-69E2BF73C97F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A84EF45A-497D-4949-AEAC-69E2BF73C97F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A84EF45A-497D-4949-AEAC-69E2BF73C97F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A84EF45A-497D-4949-AEAC-69E2BF73C97F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
