@@ -60,3 +60,31 @@ It will print the number of lines of code. Use loc *.js to specify an optional m
 FindProjectsWithSameGuid
 ------------------------
 Sometimes people copy-paste the .csproj file and leave the GUID of the original project. This confuses the VS project system. This tool finds projects that share the same project GUID if any. The tool has no output if it didn't find anything (the good case).
+
+bin2hex
+-------
+A tool to convert binary files to text (hex) and back to binary.
+
+```
+Usage: bin2hex <input> <output> [<column-width>]*
+```
+
+If the input is a binary file, writes a human-readable hex contents to the output file (will overwrite if output exists).
+Example: for `bin2hex input.dll output.txt 8 8` the output.txt will contain
+
+```
+4D 5A 90 00 03 00 00 00  04 00 00 00 FF FF 00 00
+B8 00 00 00 00 00 00 00  40 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+...
+```
+
+By default the tool will output bytes on a single line separated by space. Specify one or more space-separated numbers after input and output to create columns.
+
+```
+  Example: bin2hex foo.dll foo.txt 8         - uses one 8-byte column
+  Example: bin2hex foo.dll foo.txt 4 4       - uses two 4-byte columns
+  Example: bin2hex foo.dll foo.txt 8 8 8     - uses three 8-byte columns
+```
+
+If the input is a text hex file produced by this tool (in a format like above), writes the bytes to the output as binary. In a hex file, whitespace is ignored, so the columns, line breaks etc. don't matter.
