@@ -63,7 +63,7 @@ Sometimes people copy-paste the .csproj file and leave the GUID of the original 
 
 bin2hex
 -------
-A tool to convert binary files to text (hex) and back to binary.
+A tool to convert binary files to text (hex) and back to binary. It can be used as a poor person's binary editor.
 
 ```
 Usage: bin2hex <input> <output> [<column-width>]*
