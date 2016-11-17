@@ -50,9 +50,12 @@ class bin2hex
             var b2 = ((byte)(b & 0xF));
             var c2 = (char)(b2 > 9 ? b2 + 55 : b2 + 0x30);
 
-            sb.Append(c1.ToString());
-            sb.Append(c2.ToString());
-            sb.Append(' ');
+            sb.Append(c1);
+            sb.Append(c2);
+            if (column < 7)
+            {
+                sb.Append(' ');
+            }
 
             column++;
             if (column == 8)
