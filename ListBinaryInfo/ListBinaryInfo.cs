@@ -7,6 +7,8 @@ using System.Reflection;
 
 class ListBinaryInfo
 {
+    private static readonly string netfxTools = @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools";
+
     static void Main(string[] args)
     {
         string patternList = "*.dll;*.exe";
@@ -50,7 +52,8 @@ class ListBinaryInfo
         file = QuoteIfNecessary(file);
         var corflags = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-            @"Microsoft SDKs\Windows\v8.1A\bin\NETFX 4.5.1 Tools\corflags.exe");
+            netfxTools,
+            "corflags.exe");
         StartProcess(corflags, file);
     }
 
@@ -59,7 +62,8 @@ class ListBinaryInfo
         file = QuoteIfNecessary(file);
         var sn = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-            @"Microsoft SDKs\Windows\v8.1A\bin\NETFX 4.5.1 Tools\sn.exe");
+            netfxTools,
+            @"sn.exe");
         StartProcess(sn, "-vf " + file);
     }
 
