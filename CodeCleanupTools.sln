@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SortProjectItems", "SortProjectItems\SortProjectItems.csproj", "{C4A2CF09-E004-4769-B280-6298A6C0876C}"
 EndProject
@@ -33,6 +33,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoveDuplicateItems", "RemoveDuplicateItems\RemoveDuplicateItems.csproj", "{A84EF45A-497D-4949-AEAC-69E2BF73C97F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Touch", "Touch\Touch.csproj", "{6178BB59-2B2B-48E1-8EC6-A76227379952}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "bin2hex", "bin2hex\bin2hex.csproj", "{BD195B29-1385-4AD9-9DEA-3FE0AA237DD2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -88,6 +90,10 @@ Global
 		{6178BB59-2B2B-48E1-8EC6-A76227379952}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6178BB59-2B2B-48E1-8EC6-A76227379952}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6178BB59-2B2B-48E1-8EC6-A76227379952}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD195B29-1385-4AD9-9DEA-3FE0AA237DD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD195B29-1385-4AD9-9DEA-3FE0AA237DD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD195B29-1385-4AD9-9DEA-3FE0AA237DD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD195B29-1385-4AD9-9DEA-3FE0AA237DD2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
