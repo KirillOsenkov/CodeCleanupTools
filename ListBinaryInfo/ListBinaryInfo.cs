@@ -12,9 +12,24 @@ class ListBinaryInfo
     static void Main(string[] args)
     {
         string patternList = "*.dll;*.exe";
-        if (args.Length == 1)
+
+        if (args.Length > 0)
         {
-            patternList = args[0];
+            if (args.Length == 1)
+            {
+                if (args[0] == "/?" || args[0] == "-h" || args[0] == "-help" || args[0] == "help")
+                {
+                    PrintUsage();
+                    return;
+                }
+
+                patternList = args[0];
+            }
+            else
+            {
+                PrintUsage();
+                return;
+            }
         }
 
         var root = Environment.CurrentDirectory;
@@ -33,6 +48,15 @@ class ListBinaryInfo
             CheckPlatform(file);
             Console.WriteLine();
         }
+    }
+
+    private static void PrintUsage()
+    {
+        Console.WriteLine(@"Usage: ListBinaryInfo.exe [<pattern>]
+  Examples: 
+    ListBinaryInfo foo.dll
+    ListBinaryInfo *.exe
+    ListBinaryInfo");
     }
 
     private static void WriteVersion(string file)
