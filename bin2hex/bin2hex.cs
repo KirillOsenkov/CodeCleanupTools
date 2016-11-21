@@ -152,7 +152,7 @@ class bin2hex
 
         if (columns == null || columns.Length == 0)
         {
-            columns = new[] { bytes.Length };
+            columns = new[] { 32 };
         }
 
         int sum = 0;
