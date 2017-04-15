@@ -7,21 +7,18 @@ class bin2hex
 {
     static void Main(string[] args)
     {
-        if (args.Length < 2)
+        if (args.Length == 0)
         {
-            Console.WriteLine("A tool to convert binary files to text (hex) and back to binary.");
-            Console.WriteLine("  Usage: bin2hex <input> <output> [<column-width>]*");
-            Console.WriteLine("  If the input is a binary file, writes a human-readable hex contents to the output file (will overwrite)");
-            Console.WriteLine("  If the input is a text hex file produced by this tool, writes the bytes to the output as binary. In a hex file, whitespace is ignored.");
-            Console.WriteLine("  By default the tool will output bytes on a single line. Specify one or more space-separated numbers after input and output to create columns.");
-            Console.WriteLine("  Example: bin2hex foo.dll foo.txt 8         - uses one 8-byte column");
-            Console.WriteLine("  Example: bin2hex foo.dll foo.txt 4 4       - uses two 4-byte columns");
-            Console.WriteLine("  Example: bin2hex foo.dll foo.txt 8 8 8     - uses three 8-byte columns");
+            PrintHelp();
             return;
         }
 
-        var input = args[0];
-        var output = args[1];
+        string input = args[0];
+        string output = null;
+        if (args.Length >= 2)
+        {
+            output = args[1];
+        }
 
         if (!File.Exists(input))
         {
@@ -59,19 +56,45 @@ class bin2hex
         Convert(input, output, columns.ToArray());
     }
 
+    private static void PrintHelp()
+    {
+        Console.WriteLine("A tool to convert binary files to text (hex) and back to binary.");
+        Console.WriteLine("  Usage: bin2hex <input> <output> [<column-width>]*");
+        Console.WriteLine("  If the input is a binary file, writes a human-readable hex contents to the output file (will overwrite)");
+        Console.WriteLine("  If the input is a text hex file produced by this tool, writes the bytes to the output as binary. In a hex file, whitespace is ignored.");
+        Console.WriteLine("  By default the tool will output bytes on a single line. Specify one or more space-separated numbers after input and output to create columns.");
+        Console.WriteLine("  Example: bin2hex foo.dll foo.txt 8         - uses one 8-byte column");
+        Console.WriteLine("  Example: bin2hex foo.dll foo.txt 4 4       - uses two 4-byte columns");
+        Console.WriteLine("  Example: bin2hex foo.dll foo.txt 8 8 8     - uses three 8-byte columns");
+    }
+
     private static void Convert(string input, string output, int[] columns = null)
     {
         var bytes = File.ReadAllBytes(input);
         bool isValidHexFile = IsValidHexFile(bytes);
         if (isValidHexFile)
         {
-            bytes = ConvertToBytes(bytes);
-            File.WriteAllBytes(output, bytes);
+            if (output == null)
+            {
+                Console.Error.WriteLine("Need to pass the output file name for the destination file.");
+            }
+            else
+            {
+                bytes = ConvertToBytes(bytes);
+                File.WriteAllBytes(output, bytes);
+            }
         }
         else
         {
             var text = ConvertToHex(bytes, columns);
-            File.WriteAllText(output, text);
+            if (output == null)
+            {
+                Console.WriteLine(text);
+            }
+            else
+            {
+                File.WriteAllText(output, text);
+            }
         }
     }
 
