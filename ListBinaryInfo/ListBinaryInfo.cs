@@ -32,12 +32,19 @@ class ListBinaryInfo
             }
         }
 
-        var root = Environment.CurrentDirectory;
-        var patterns = patternList.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-        List<string> files = new List<string>();
-        foreach (var pattern in patterns)
+        var files = new List<string>();
+        if (File.Exists(patternList))
         {
-            files.AddRange(Directory.GetFiles(root, pattern, SearchOption.AllDirectories));
+            files.Add(Path.GetFullPath(patternList));
+        }
+        else
+        {
+            var root = Environment.CurrentDirectory;
+            var patterns = patternList.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var pattern in patterns)
+            {
+                files.AddRange(Directory.GetFiles(root, pattern, SearchOption.AllDirectories));
+            }
         }
 
         foreach (var file in files)
