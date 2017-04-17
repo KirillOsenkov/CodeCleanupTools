@@ -143,6 +143,11 @@ class bin2hex
     {
         int digitCount = 0;
 
+        if (bytes.Length == 0)
+        {
+            return false;
+        }
+
         for (int i = 0; i < bytes.Length; i++)
         {
             char c = (char)bytes[i];
