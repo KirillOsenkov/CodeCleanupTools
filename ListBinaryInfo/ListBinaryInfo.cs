@@ -12,6 +12,14 @@ class ListBinaryInfo
     static void Main(string[] args)
     {
         string patternList = "*.dll;*.exe";
+        bool recursive = true;
+
+        var arguments = new HashSet<string>(args, StringComparer.OrdinalIgnoreCase);
+        if (arguments.Contains("/nr"))
+        {
+            arguments.Remove("/nr");
+            recursive = false;
+        }
 
         if (args.Length > 0)
         {
@@ -43,7 +51,7 @@ class ListBinaryInfo
             var patterns = patternList.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var pattern in patterns)
             {
-                files.AddRange(Directory.GetFiles(root, pattern, SearchOption.AllDirectories));
+                files.AddRange(Directory.GetFiles(root, pattern, recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly));
             }
         }
 
@@ -59,10 +67,12 @@ class ListBinaryInfo
 
     private static void PrintUsage()
     {
-        Console.WriteLine(@"Usage: ListBinaryInfo.exe [<pattern>]
+        Console.WriteLine(@"Usage: ListBinaryInfo.exe [<pattern>] [/nr]
+        /nr: non-recursive (current directory only). Recursive by default.
+
   Examples: 
     ListBinaryInfo foo.dll
-    ListBinaryInfo *.exe
+    ListBinaryInfo *.exe /nr
     ListBinaryInfo");
     }
 
