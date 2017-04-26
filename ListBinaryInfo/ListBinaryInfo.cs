@@ -21,17 +21,16 @@ class ListBinaryInfo
             recursive = false;
         }
 
-        if (args.Length > 0)
+        if (arguments.Count > 0)
         {
-            if (args.Length == 1)
+            if (arguments.Count == 1)
             {
-                if (args[0] == "/?" || args[0] == "-h" || args[0] == "-help" || args[0] == "help")
+                patternList = arguments.First();
+                if (patternList == "/?" || patternList == "-h" || patternList == "-help" || patternList == "help")
                 {
                     PrintUsage();
                     return;
                 }
-
-                patternList = args[0];
             }
             else
             {
@@ -150,6 +149,13 @@ class ListBinaryInfo
         }
 
         string text = e.Data;
+
+        if (text.Contains("32BITPREF"))
+        {
+            Highlight("    " + text, ConsoleColor.DarkGreen);
+            return;
+        }
+
         if (text.Contains("delay") ||
             text.Contains("Copyright") ||
             text.Contains("(R)") ||
