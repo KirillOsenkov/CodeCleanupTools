@@ -49,29 +49,33 @@ class TextAndWhitespace
 
     static void Main(string[] args)
     {
-        if (args.Length > 1)
-        {
-            PrintHelp();
-            return;
-        }
-
+        var stripEncoding = false;
         var pattern = "*.*";
-        if (args.Length == 1)
+        for(int i = 0; i < args.Length; i++)
         {
-            if (args[0] == "/?" || args[0] == "-h" || args[0] == "-help" || args[0] == "/help")
+            var curArg = args[i];
+            switch (curArg.ToLower())
             {
-                PrintHelp();
-                return;
+                case "/?":
+                case "-h":
+                case "-help":
+                case "/help":
+                    PrintHelp();
+                    return;
+                case "/stripencoding":
+                    stripEncoding = true;
+                    break;
+                default:
+                    pattern = curArg;
+                    break;
             }
-
-            pattern = args[0];
         }
 
         var folder = Environment.CurrentDirectory;
         var fileInfos = GetNonHiddenFiles(new DirectoryInfo(folder), pattern);
         foreach (var file in fileInfos)
         {
-            ProcessFile(file.FullName);
+            ProcessFile(file.FullName, stripEncoding);
         }
     }
 
@@ -90,7 +94,7 @@ class TextAndWhitespace
         return fileInfos;
     }
 
-    public static void ProcessFile(string file)
+    public static void ProcessFile(string file, bool stripEncoding)
     {
         if (IsBinary(file))
         {
@@ -104,22 +108,50 @@ class TextAndWhitespace
             text = File.ReadAllText(file, Encoding.Default);
         }
 
+        if (IsGeneratedCode(text) || text.IndexOf('\0') > -1)
+        {
+            return;
+        }
+
+        Encoding currentEncoding = GetEncoding(file);
+        if (stripEncoding)
+        {
+            stripEncoding = (currentEncoding == Encoding.UTF8);
+        }
+
         var extension = Path.GetExtension(file).TrimStart('.').ToLowerInvariant();
 
         var newText = ProcessText(text, extension);
-        if (newText != text)
+        if (stripEncoding)
         {
             File.WriteAllText(file, newText);
         }
+        else if (newText != text)
+        {
+            File.WriteAllText(file, newText, currentEncoding);
+        }
+    }
+
+    public static Encoding GetEncoding(string filename)
+    {
+        // Read the BOM
+        var bom = new byte[4];
+        using (var file = new FileStream(filename, FileMode.Open, FileAccess.Read))
+        {
+            file.Read(bom, 0, 4);
+        }
+
+        // Analyze the BOM
+        if (bom[0] == 0x2b && bom[1] == 0x2f && bom[2] == 0x76) return Encoding.UTF7;
+        if (bom[0] == 0xef && bom[1] == 0xbb && bom[2] == 0xbf) return Encoding.UTF8;
+        if (bom[0] == 0xff && bom[1] == 0xfe) return Encoding.Unicode; //UTF-16LE
+        if (bom[0] == 0xfe && bom[1] == 0xff) return Encoding.BigEndianUnicode; //UTF-16BE
+        if (bom[0] == 0 && bom[1] == 0 && bom[2] == 0xfe && bom[3] == 0xff) return Encoding.UTF32;
+        return Encoding.ASCII;
     }
 
     public static string ProcessText(string text, string extension)
     {
-        if (IsGeneratedCode(text) || text.IndexOf('\0') > -1)
-        {
-            return text;
-        }
-
         var newText = text;
         newText = EnsureCrLf(newText);
 
@@ -199,11 +231,11 @@ class TextAndWhitespace
 
     private static void PrintHelp()
     {
-        Console.WriteLine(@"Usage: TextAndWhitespace.exe [pattern]
+        Console.WriteLine(@"Usage: TextAndWhitespace.exe [/stripEncoding] [pattern]
 
     * Converts all line endings to CRLF for every file in the current
       directory and all subdirectories
-    * Sets the encoding to UTF8 without signature (no-BOM)
+    * Strips UTF8 encoding from files when not necessary if specified
     * Replaces leading tabs with spaces
     * Removes trailing whitespace from lines
 
