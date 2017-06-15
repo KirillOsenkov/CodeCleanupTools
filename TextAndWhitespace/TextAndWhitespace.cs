@@ -54,7 +54,7 @@ class TextAndWhitespace
         for(int i = 0; i < args.Length; i++)
         {
             var curArg = args[i];
-            switch (curArg.ToLower())
+            switch (curArg.ToLowerInvariant())
             {
                 case "/?":
                 case "-h":
@@ -81,7 +81,7 @@ class TextAndWhitespace
 
     private static IList<FileInfo> GetNonHiddenFiles(DirectoryInfo baseDirectory, string pattern)
     {
-        var fileInfos = new List<System.IO.FileInfo>();
+        var fileInfos = new List<FileInfo>();
         fileInfos.AddRange(baseDirectory.GetFiles(pattern, SearchOption.TopDirectoryOnly).Where(f => (f.Attributes & FileAttributes.Hidden) == 0));
 
         // skip hidden directories (like .git) and directories that start with '.'
@@ -132,11 +132,16 @@ class TextAndWhitespace
         }
     }
 
-    public static Encoding GetEncoding(string filename)
+    public static Encoding GetEncoding(string filePath)
     {
+        if (new FileInfo(filePath).Length < 4)
+        {
+            return Encoding.ASCII;
+        }
+
         // Read the BOM
         var bom = new byte[4];
-        using (var file = new FileStream(filename, FileMode.Open, FileAccess.Read))
+        using (var file = new FileStream(filePath, FileMode.Open, FileAccess.Read))
         {
             file.Read(bom, 0, 4);
         }
