@@ -54,7 +54,7 @@ class ListBinaryInfo
             }
         }
 
-        foreach (var assemblyNameGroup in files.Select(f => FileInfo.Get(f)).GroupBy(f => f.AssemblyName))
+        foreach (var assemblyNameGroup in files.Select(f => FileInfo.Get(f)).GroupBy(f => f.AssemblyName).OrderBy(g => g.Key))
         {
             Highlight(assemblyNameGroup.Key, ConsoleColor.Cyan);
             foreach (var shaGroup in assemblyNameGroup.GroupBy(f => f.Sha))
