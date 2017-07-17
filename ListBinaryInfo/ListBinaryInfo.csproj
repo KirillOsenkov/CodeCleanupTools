@@ -37,6 +37,9 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\CommonUtilities.cs">
+      <Link>CommonUtilities.cs</Link>
+    </Compile>
     <Compile Include="ListBinaryInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

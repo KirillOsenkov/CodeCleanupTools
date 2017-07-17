@@ -54,15 +54,52 @@ class ListBinaryInfo
             }
         }
 
-        foreach (var file in files)
+        foreach (var assemblyNameGroup in files.Select(f => FileInfo.Get(f)).GroupBy(f => f.AssemblyName))
         {
-            Console.WriteLine(file);
-            WriteVersion(file);
-            CheckSigned(file);
-            CheckPlatform(file);
-            Console.WriteLine();
+            Highlight(assemblyNameGroup.Key, ConsoleColor.Cyan);
+            foreach (var shaGroup in assemblyNameGroup.GroupBy(f => f.Sha))
+            {
+                Highlight("    SHA: " + shaGroup.Key, ConsoleColor.DarkCyan);
+                foreach (var file in shaGroup.OrderBy(f => f.FilePath))
+                {
+                    Highlight("    " + file.FilePath, ConsoleColor.Gray);
+                }
+
+                var first = shaGroup.First();
+                Highlight("        " + first.FullSigned, ConsoleColor.Green);
+                Highlight("        " + first.Architecture, ConsoleColor.Blue);
+                Highlight("        " + first.Platform, ConsoleColor.DarkYellow);
+                Highlight("        " + first.Signed, ConsoleColor.DarkGreen);
+            }
         }
     }
+
+    public class FileInfo
+    {
+        public string FilePath { get; set; }
+        public string Sha { get; set; }
+        public string AssemblyName { get; set; }
+        public string FullSigned { get; set; }
+        public string Platform { get; set; }
+        public string Architecture { get; set; }
+        public string Signed { get; set; }
+
+        public static FileInfo Get(string filePath)
+        {
+            var fileInfo = new FileInfo
+            {
+                FilePath = filePath,
+                AssemblyName = GetAssemblyName(filePath),
+                Sha = Utilities.SHA1Hash(filePath)
+            };
+            current = fileInfo;
+            CheckSigned(filePath);
+            CheckPlatform(filePath);
+            return fileInfo;
+        }
+    }
+
+    private static FileInfo current; 
 
     private static void PrintUsage()
     {
@@ -75,15 +112,16 @@ class ListBinaryInfo
     ListBinaryInfo");
     }
 
-    private static void WriteVersion(string file)
+    private static string GetAssemblyName(string file)
     {
         try
         {
             var name = AssemblyName.GetAssemblyName(file);
-            Highlight(name.ToString(), ConsoleColor.DarkGray);
+            return name.ToString();
         }
         catch
         {
+            return "Native";
         }
     }
 
@@ -142,8 +180,7 @@ class ListBinaryInfo
 
     private static void Process_DataReceived(object sender, DataReceivedEventArgs e)
     {
-        if (e == null ||
-            string.IsNullOrEmpty(e.Data))
+        if (e == null || string.IsNullOrEmpty(e.Data))
         {
             return;
         }
@@ -152,7 +189,7 @@ class ListBinaryInfo
 
         if (text.Contains("32BITPREF"))
         {
-            Highlight("    " + text, ConsoleColor.DarkGreen);
+            current.Platform = text;
             return;
         }
 
@@ -174,37 +211,37 @@ class ListBinaryInfo
 
         if (text.Contains("The specified file does not have a valid managed header"))
         {
-            Highlight("    Native", ConsoleColor.DarkRed);
+            current.AssemblyName = "Native";
             return;
         }
 
         if (text.Contains("is valid"))
         {
-            Highlight("    Full-signed", ConsoleColor.White);
+            current.FullSigned = "Full-signed";
             return;
         }
 
         if (text.Contains("32BITREQ  : 1"))
         {
-            Highlight("    x86", ConsoleColor.Green);
+            current.Architecture = "x86";
             return;
         }
 
         if (text.Contains("32BITREQ  : 0"))
         {
-            Highlight("    AnyCPU");
+            current.Architecture = "Any CPU";
             return;
         }
 
         if (text.Contains("Signed    : 1"))
         {
-            Highlight("    Signed");
+            current.Signed = "Signed";
             return;
         }
 
         if (text.Contains("Signed    : 0"))
         {
-            Highlight("    Unsigned", ConsoleColor.DarkCyan);
+            current.Signed = "Unsigned";
             return;
         }
 
