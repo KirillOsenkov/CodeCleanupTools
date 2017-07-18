@@ -7,10 +7,22 @@ using System.Reflection;
 
 class ListBinaryInfo
 {
-    private static readonly string netfxTools = @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools";
+    private static string[] netfxToolsPaths =
+    {
+        @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.2 Tools",
+        @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools",
+        @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools",
+        @"Microsoft SDKs\Windows\v8.1A\bin\NETFX 4.5.1 Tools",
+        @"Microsoft SDKs\Windows\v7.0A\bin",
+    };
+
+    private static string corflagsExe;
+    private static string snExe;
 
     static void Main(string[] args)
     {
+        FindCorflagsAndSn();
+
         string patternList = "*.dll;*.exe";
         bool recursive = true;
 
@@ -59,20 +71,62 @@ class ListBinaryInfo
             Highlight(assemblyNameGroup.Key, ConsoleColor.Cyan);
             foreach (var shaGroup in assemblyNameGroup.GroupBy(f => f.Sha))
             {
-                Highlight("    SHA: " + shaGroup.Key, ConsoleColor.DarkCyan);
-                foreach (var file in shaGroup.OrderBy(f => f.FilePath))
+                var first = shaGroup.First();
+                Highlight("    SHA: " + shaGroup.Key, ConsoleColor.DarkGray, newLineAtEnd: false);
+                var signedText = first.FullSigned;
+                if (first.Signed != "Signed" && first.Signed != null)
                 {
-                    Highlight("    " + file.FilePath, ConsoleColor.Gray);
+                    signedText += " (" + first.Signed + ")";
                 }
 
-                var first = shaGroup.First();
-                Highlight("        " + first.FullSigned, ConsoleColor.Green);
-                Highlight("        " + first.Architecture, ConsoleColor.Blue);
-                Highlight("        " + first.Platform, ConsoleColor.DarkYellow);
-                Highlight("        " + first.Signed, ConsoleColor.DarkGreen);
+                Highlight($" {signedText} ", ConsoleColor.DarkGray, newLineAtEnd: false);
+
+                var platformText = first.Architecture;
+                if (first.Platform != "32BITPREF : 0" && first.Platform != null)
+                {
+                    platformText += " (" + first.Platform + ")";
+                }
+
+                Highlight(platformText, ConsoleColor.DarkGray);
+
+                foreach (var file in shaGroup.OrderBy(f => f.FilePath))
+                {
+                    Highlight("        " + file.FilePath, ConsoleColor.White);
+                }
             }
         }
     }
+
+    private static void FindCorflagsAndSn()
+    {
+        foreach (var netfxToolsPath in netfxToolsPaths)
+        {
+            var path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                netfxToolsPath,
+                "corflags.exe");
+            if (File.Exists(path) && corflagsExe == null)
+            {
+                corflagsExe = path;
+            }
+
+            path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                netfxToolsPath,
+                @"sn.exe");
+            if (File.Exists(path) && snExe == null)
+            {
+                snExe = path;
+            }
+
+            if (corflagsExe != null && snExe != null)
+            {
+                break;
+            }
+        }
+    }
+
+    public const string NotAManagedAssembly = "Not a managed assembly";
 
     public class FileInfo
     {
@@ -93,13 +147,17 @@ class ListBinaryInfo
                 Sha = Utilities.SHA1Hash(filePath)
             };
             current = fileInfo;
-            CheckSigned(filePath);
-            CheckPlatform(filePath);
+            if (fileInfo.AssemblyName != NotAManagedAssembly)
+            {
+                CheckSigned(filePath);
+                CheckPlatform(filePath);
+            }
+
             return fileInfo;
         }
     }
 
-    private static FileInfo current; 
+    private static FileInfo current;
 
     private static void PrintUsage()
     {
@@ -121,28 +179,30 @@ class ListBinaryInfo
         }
         catch
         {
-            return "Native";
+            return NotAManagedAssembly;
         }
     }
 
     private static void CheckPlatform(string file)
     {
+        if (!File.Exists(corflagsExe))
+        {
+            return;
+        }
+
         file = QuoteIfNecessary(file);
-        var corflags = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-            netfxTools,
-            "corflags.exe");
-        StartProcess(corflags, file);
+        StartProcess(corflagsExe, "/nologo " + file);
     }
 
     private static void CheckSigned(string file)
     {
+        if (!File.Exists(snExe))
+        {
+            return;
+        }
+
         file = QuoteIfNecessary(file);
-        var sn = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-            netfxTools,
-            @"sn.exe");
-        StartProcess(sn, "-vf " + file);
+        StartProcess(snExe, "-vf " + file);
     }
 
     private static void StartProcess(string executableFilePath, string arguments)
@@ -201,10 +261,8 @@ class ListBinaryInfo
             text.Contains("PE  ") ||
             text.Contains("ILONLY  ") ||
             text.Contains("CorFlags") ||
-            text.Contains("32BITPREF") ||
             text.Contains("does not represent") ||
-            text.Contains("is verified with a key other than the identity key") ||
-            text.Contains("Utility"))
+            text.Contains("is verified with a key other than the identity key"))
         {
             return;
         }
@@ -248,11 +306,16 @@ class ListBinaryInfo
         Console.WriteLine(text);
     }
 
-    private static void Highlight(string message, ConsoleColor color = ConsoleColor.Cyan)
+    private static void Highlight(string message, ConsoleColor color = ConsoleColor.Cyan, bool newLineAtEnd = true)
     {
         var oldColor = Console.ForegroundColor;
         Console.ForegroundColor = color;
-        Console.WriteLine(message);
+        Console.Write(message);
+        if (newLineAtEnd)
+        {
+            Console.WriteLine();
+        }
+
         Console.ForegroundColor = oldColor;
     }
 }
