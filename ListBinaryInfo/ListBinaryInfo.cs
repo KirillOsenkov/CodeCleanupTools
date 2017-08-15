@@ -253,8 +253,7 @@ class ListBinaryInfo
             return;
         }
 
-        if (text.Contains("delay") ||
-            text.Contains("Copyright") ||
+        if (text.Contains("Copyright") ||
             text.Contains("(R)") ||
             text.Contains("Version ") ||
             text.Contains("CLR Header") ||
@@ -276,6 +275,12 @@ class ListBinaryInfo
         if (text.Contains("is valid"))
         {
             current.FullSigned = "Full-signed";
+            return;
+        }
+
+        if (text.Contains("is a delay-signed or test-signed"))
+        {
+            current.FullSigned = "Delay-signed or test-signed";
             return;
         }
 
