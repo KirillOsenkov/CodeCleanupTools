@@ -73,6 +73,9 @@ class ListBinaryInfo
             {
                 var first = shaGroup.First();
                 Highlight("    SHA: " + shaGroup.Key, ConsoleColor.DarkGray, newLineAtEnd: false);
+
+                Highlight(" " + shaGroup.First().FileSize.ToString("N0"), ConsoleColor.Gray, newLineAtEnd: false);
+
                 var signedText = first.FullSigned;
                 if (first.Signed != "Signed" && first.Signed != null)
                 {
@@ -87,7 +90,7 @@ class ListBinaryInfo
                     platformText += " (" + first.Platform + ")";
                 }
 
-                Highlight(platformText, ConsoleColor.DarkGray);
+                Highlight(platformText, ConsoleColor.Gray);
 
                 foreach (var file in shaGroup.OrderBy(f => f.FilePath))
                 {
@@ -137,6 +140,7 @@ class ListBinaryInfo
         public string Platform { get; set; }
         public string Architecture { get; set; }
         public string Signed { get; set; }
+        public long FileSize { get; set; }
 
         public static FileInfo Get(string filePath)
         {
@@ -144,7 +148,8 @@ class ListBinaryInfo
             {
                 FilePath = filePath,
                 AssemblyName = GetAssemblyName(filePath),
-                Sha = Utilities.SHA1Hash(filePath)
+                Sha = Utilities.SHA1Hash(filePath),
+                FileSize = new System.IO.FileInfo(filePath).Length
             };
             current = fileInfo;
             if (fileInfo.AssemblyName != NotAManagedAssembly)
@@ -305,6 +310,12 @@ class ListBinaryInfo
         if (text.Contains("Signed    : 0"))
         {
             current.Signed = "Unsigned";
+            return;
+        }
+
+        if (text.Contains("Failed to verify assembly -- Strong name validation failed."))
+        {
+            current.FullSigned = "Strong name validation failed";
             return;
         }
 
