@@ -51,7 +51,7 @@ class TextAndWhitespace
     {
         var stripEncoding = false;
         var pattern = "*.*";
-        for(int i = 0; i < args.Length; i++)
+        for (int i = 0; i < args.Length; i++)
         {
             var curArg = args[i];
             switch (curArg.ToLowerInvariant())
@@ -335,6 +335,29 @@ class TextAndWhitespace
         }
 
         return result.ToArray();
+    }
+
+    private static string EnsureLf(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return text;
+        }
+
+        var sb = new StringBuilder();
+
+        for (int i = 0; i < text.Length; i++)
+        {
+            var ch = text[i];
+            if (ch == '\r' && i < text.Length - 1 && text[i + 1] == '\n')
+            {
+                continue;
+            }
+
+            sb.Append(ch);
+        }
+
+        return sb.ToString();
     }
 
     private static string EnsureCrLf(string text)
