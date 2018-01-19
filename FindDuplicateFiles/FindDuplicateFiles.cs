@@ -21,8 +21,7 @@ internal class FindDuplicateFiles
         foreach (var file in allFiles)
         {
             var hash = Utilities.SHA1Hash(file);
-            HashSet<string> bucket;
-            if (!filesByHash.TryGetValue(hash, out bucket))
+            if (!filesByHash.TryGetValue(hash, out HashSet<string> bucket))
             {
                 bucket = new HashSet<string>();
                 filesByHash[hash] = bucket;

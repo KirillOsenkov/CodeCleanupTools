@@ -160,8 +160,7 @@ class TextAndWhitespace
         var newText = text;
         newText = EnsureCrLf(newText);
 
-        int spaces = 4;
-        if (replaceLeadingTabsWithSpaces.TryGetValue(extension, out spaces))
+        if (replaceLeadingTabsWithSpaces.TryGetValue(extension, out int spaces))
         {
             newText = ReplaceLeadingTabsWithSpaces(newText, spaces);
         }
