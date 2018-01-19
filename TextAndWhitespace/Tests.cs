@@ -1,20 +1,19 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 
-[TestClass]
 public class Tests
 {
     private void GetLines(string text, params string[] expectedLines)
     {
         var actualLines = TextAndWhitespace.GetLines(text);
-        Assert.AreEqual(expectedLines.Length, actualLines.Length);
+        Assert.Equal(expectedLines.Length, actualLines.Length);
 
         for (int i = 0; i < expectedLines.Length; i++)
         {
-            Assert.AreEqual(expectedLines[i], actualLines[i]);
+            Assert.Equal(expectedLines[i], actualLines[i]);
         }
     }
 
-    [TestMethod]
+    [Fact]
     public void TestGetLines()
     {
         GetLines(
@@ -35,7 +34,7 @@ d",
         GetLines("\r\n\r\n", "", "", "");
     }
 
-    [TestMethod]
+    [Fact]
     public void TestReplaceLeadingTabsWithSpaces()
     {
         TabsToSpaces(
@@ -61,6 +60,6 @@ d",
     private void TabsToSpaces(string original, string expected)
     {
         var actual = TextAndWhitespace.ReplaceLeadingTabsWithSpaces(original, 4);
-        Assert.AreEqual(expected, actual);
+        Assert.Equal(expected, actual);
     }
 }
