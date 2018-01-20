@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Windows.Forms;
 
 internal class FindDuplicateFiles
 {
@@ -45,6 +44,5 @@ internal class FindDuplicateFiles
         }
 
         Console.WriteLine(sb.ToString());
-        Clipboard.SetText(sb.ToString());
     }
 }
