@@ -139,8 +139,7 @@ RemoveDuplicateItems.exe /r
             // if we've seen this node before, remove it
             if (!visited.Add(item.ToString(SaveOptions.DisableFormatting)))
             {
-                var previousTrivia = item.PreviousNode as XText;
-                if (previousTrivia != null)
+                if (item.PreviousNode is XText previousTrivia)
                 {
                     previousTrivia.Remove();
                 }

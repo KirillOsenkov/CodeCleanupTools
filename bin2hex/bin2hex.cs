@@ -36,8 +36,7 @@ class bin2hex
         {
             for (int i = 2; i < args.Length; i++)
             {
-                int column;
-                if (!int.TryParse(args[i], out column))
+                if (!int.TryParse(args[i], out int column))
                 {
                     Console.WriteLine($"Argument specified after input and output must be an integer for column width (you specified '{args[i]}')");
                     return;

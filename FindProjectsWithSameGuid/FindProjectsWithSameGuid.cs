@@ -22,8 +22,7 @@ class Program
             var guid = GetGuid(projectFile);
             if (guid != Guid.Empty)
             {
-                List<string> bucket = null;
-                if (!projectsByGuid.TryGetValue(guid, out bucket))
+                if (!projectsByGuid.TryGetValue(guid, out List<string> bucket))
                 {
                     bucket = new List<string>();
                     projectsByGuid.Add(guid, bucket);
@@ -49,13 +48,12 @@ class Program
     {
         try
         {
-            Guid result;
             XDocument document = XDocument.Load(projectFilePath, LoadOptions.PreserveWhitespace | LoadOptions.SetLineInfo);
             XNamespace msBuildNamespace = document.Root.GetDefaultNamespace();
             XName projectGuidName = XName.Get("ProjectGuid", msBuildNamespace.NamespaceName);
             var projectGuidElement = document.Root.Descendants(projectGuidName).FirstOrDefault();
             var value = projectGuidElement.Value;
-            Guid.TryParse(value, out result);
+            Guid.TryParse(value, out Guid result);
             return result;
         }
         catch (Exception)

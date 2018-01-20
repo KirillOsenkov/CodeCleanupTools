@@ -129,8 +129,7 @@ public class MoveUsings
                 return null;
             }
 
-            var parentNamespace = node.Parent as NamespaceDeclarationSyntax;
-            if (parentNamespace == null)
+            if (!(node.Parent is NamespaceDeclarationSyntax parentNamespace))
             {
                 return base.Visit(node);
             }

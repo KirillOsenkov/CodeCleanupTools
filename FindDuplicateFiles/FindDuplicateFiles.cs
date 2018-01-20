@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Windows.Forms;
 
 internal class FindDuplicateFiles
 {
@@ -21,8 +20,7 @@ internal class FindDuplicateFiles
         foreach (var file in allFiles)
         {
             var hash = Utilities.SHA1Hash(file);
-            HashSet<string> bucket;
-            if (!filesByHash.TryGetValue(hash, out bucket))
+            if (!filesByHash.TryGetValue(hash, out HashSet<string> bucket))
             {
                 bucket = new HashSet<string>();
                 filesByHash[hash] = bucket;
@@ -46,6 +44,5 @@ internal class FindDuplicateFiles
         }
 
         Console.WriteLine(sb.ToString());
-        Clipboard.SetText(sb.ToString());
     }
 }

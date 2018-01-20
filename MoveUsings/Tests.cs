@@ -1,15 +1,14 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 
-[TestClass]
 public class Tests
 {
     private void Test(string original, string expected)
     {
         var actual = MoveUsings.MoveUsingsToTop(original);
-        Assert.AreEqual(expected, actual);
+        Assert.Equal(expected, actual);
     }
 
-    [TestMethod]
+    [Fact]
     public void BasicTest()
     {
         Test(
@@ -39,7 +38,7 @@ namespace N
 ");
     }
 
-    [TestMethod]
+    [Fact]
     public void Comments()
     {
         Test(
@@ -64,7 +63,7 @@ namespace N
 ");
     }
 
-    [TestMethod]
+    [Fact]
     public void Comments2()
     {
         Test(
@@ -91,7 +90,7 @@ namespace N
 ");
     }
 
-    [TestMethod]
+    [Fact]
     public void Whitespace()
     {
         Test(
@@ -120,7 +119,7 @@ namespace N
 ");
     }
 
-    [TestMethod]
+    [Fact]
     public void MultipleNamespaces()
     {
         Test(
@@ -160,7 +159,7 @@ namespace N2.N3
 ");
     }
 
-    [TestMethod]
+    [Fact]
     public void TopLevelNoop()
     {
         Test(
@@ -178,7 +177,7 @@ namespace N { }
 ");
     }
 
-    [TestMethod]
+    [Fact]
     public void NoopWithNoUsings()
     {
         Test(

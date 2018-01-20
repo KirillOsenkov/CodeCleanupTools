@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <Authors>Kirill Osenkov</Authors>
+    <PackageProjectUrl>http://github.com/kirillosenkov/codecleanuptools</PackageProjectUrl>
+    <PackageLicenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</PackageLicenseUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>
