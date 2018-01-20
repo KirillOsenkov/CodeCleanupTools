@@ -3,5 +3,9 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <RuntimeIdentifiers>win10-x64;osx.10.11-x64</RuntimeIdentifiers>
     <OutputType>Exe</OutputType>
+    <VersionPrefix>2.0.0</VersionPrefix>
+    <Description>List all the file types/extensions present in current directory and all subdirectories.</Description>
+    <AssemblyTitle>$(Descritpion)</AssemblyTitle>
+    <PackageTags>file type extension list tool</PackageTags>
   </PropertyGroup>
 </Project>

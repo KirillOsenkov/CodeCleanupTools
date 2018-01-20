@@ -3,5 +3,9 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <RuntimeIdentifiers>win10-x64;osx.10.11-x64</RuntimeIdentifiers>
     <OutputType>Exe</OutputType>
+    <VersionPrefix>2.0.0</VersionPrefix>
+    <Description>Sort Project Items</Description>
+    <AssemblyTitle>$(Description)</AssemblyTitle>
+    <ProjectTags>sortprojectitems MSBuild CSProj Project Cleanup</ProjectTags>
   </PropertyGroup>
 </Project>
