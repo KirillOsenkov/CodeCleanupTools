@@ -49,7 +49,6 @@ class TextAndWhitespace
 
     static void Main(string[] args)
     {
-        var stripEncoding = false;
         var pattern = "*.*";
         for (int i = 0; i < args.Length; i++)
         {
@@ -62,9 +61,6 @@ class TextAndWhitespace
                 case "/help":
                     PrintHelp();
                     return;
-                case "/stripencoding":
-                    stripEncoding = true;
-                    break;
                 default:
                     pattern = curArg;
                     break;
@@ -75,7 +71,7 @@ class TextAndWhitespace
         var fileInfos = GetNonHiddenFiles(new DirectoryInfo(folder), pattern);
         foreach (var file in fileInfos)
         {
-            ProcessFile(file.FullName, stripEncoding);
+            ProcessFile(file.FullName, stripEncoding: true);
         }
     }
 
@@ -152,13 +148,13 @@ class TextAndWhitespace
         if (bom[0] == 0xff && bom[1] == 0xfe) return Encoding.Unicode; //UTF-16LE
         if (bom[0] == 0xfe && bom[1] == 0xff) return Encoding.BigEndianUnicode; //UTF-16BE
         if (bom[0] == 0 && bom[1] == 0 && bom[2] == 0xfe && bom[3] == 0xff) return Encoding.UTF32;
-        return Encoding.ASCII;
+        return new UTF8Encoding();
     }
 
     public static string ProcessText(string text, string extension)
     {
         var newText = text;
-        newText = EnsureCrLf(newText);
+        newText = EnsureLf(newText);
 
         if (replaceLeadingTabsWithSpaces.TryGetValue(extension, out int spaces))
         {
@@ -225,13 +221,27 @@ class TextAndWhitespace
 
     public static string TrimTrailingWhitespaceFromEveryLine(string text)
     {
-        IEnumerable<string> lines = GetLines(text);
-        lines = lines.Select(l => l.TrimEnd());
-        text = string.Join(Environment.NewLine, lines);
+        IEnumerable<string> lines = GetLines(text, includeLineBreaksInLines: true);
+        lines = lines.Select(l => TrimEnd(l));
+        text = string.Concat(lines);
         return text;
     }
 
-    private static string RemoveConsecutiveEmptyLines(string text) => text.Replace("\n\r\n\r", "\n\r");
+    private static string TrimEnd(string l)
+    {
+        if (l.EndsWith("\r\n"))
+        {
+            return l.Substring(0, l.Length - 2).TrimEnd() + "\r\n";
+        }
+        else if (l.EndsWith("\n"))
+        {
+            return l.Substring(0, l.Length - 1).TrimEnd() + "\n";
+        }
+
+        return l;
+    }
+
+    private static string RemoveConsecutiveEmptyLines(string text) => text.Replace("\n\r\n\r", "\n\r").Replace("\n\n\n", "\n\n");
 
     private static void PrintHelp()
     {
