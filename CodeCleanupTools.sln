@@ -32,6 +32,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Time", "Time\Time.csproj", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FindDuplicateFilesUI", "FindDuplicateFilesUI\FindDuplicateFilesUI.csproj", "{A2AF0DEB-A3EC-48E0-9B3A-B2AFA9F49773}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sha", "sha\sha.csproj", "{48F5B934-8BD4-4F92-907B-87B29F0747EC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -98,6 +100,10 @@ Global
 		{A2AF0DEB-A3EC-48E0-9B3A-B2AFA9F49773}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{A2AF0DEB-A3EC-48E0-9B3A-B2AFA9F49773}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{A2AF0DEB-A3EC-48E0-9B3A-B2AFA9F49773}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{48F5B934-8BD4-4F92-907B-87B29F0747EC}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{48F5B934-8BD4-4F92-907B-87B29F0747EC}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{48F5B934-8BD4-4F92-907B-87B29F0747EC}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{48F5B934-8BD4-4F92-907B-87B29F0747EC}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
