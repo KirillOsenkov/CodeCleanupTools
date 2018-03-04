@@ -9,13 +9,15 @@ internal class FindDuplicateFiles
 
     private static void Main(string[] args)
     {
+        var root = Environment.CurrentDirectory;
+
         var pattern = "*.*";
         if (args.Length == 1)
         {
             pattern = args[0];
         }
 
-        var allFiles = Directory.GetFiles(Environment.CurrentDirectory, pattern, SearchOption.AllDirectories);
+        var allFiles = Directory.GetFiles(root, pattern, SearchOption.AllDirectories);
 
         foreach (var file in allFiles)
         {
