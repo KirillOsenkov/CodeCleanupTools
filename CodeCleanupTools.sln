@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2024
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SortProjectItems", "SortProjectItems\SortProjectItems.csproj", "{C4A2CF09-E004-4769-B280-6298A6C0876C}"
 EndProject
@@ -29,6 +29,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "bin2hex", "bin2hex\bin2hex.csproj", "{BD195B29-1385-4AD9-9DEA-3FE0AA237DD2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Time", "Time\Time.csproj", "{0EF0F305-1BD0-4B8D-8C16-22720A28504A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FindDuplicateFilesUI", "FindDuplicateFilesUI\FindDuplicateFilesUI.csproj", "{A2AF0DEB-A3EC-48E0-9B3A-B2AFA9F49773}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -92,6 +94,10 @@ Global
 		{0EF0F305-1BD0-4B8D-8C16-22720A28504A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{0EF0F305-1BD0-4B8D-8C16-22720A28504A}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{0EF0F305-1BD0-4B8D-8C16-22720A28504A}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{A2AF0DEB-A3EC-48E0-9B3A-B2AFA9F49773}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{A2AF0DEB-A3EC-48E0-9B3A-B2AFA9F49773}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{A2AF0DEB-A3EC-48E0-9B3A-B2AFA9F49773}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{A2AF0DEB-A3EC-48E0-9B3A-B2AFA9F49773}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
