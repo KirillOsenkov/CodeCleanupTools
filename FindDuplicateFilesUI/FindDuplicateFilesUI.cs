@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -38,6 +40,8 @@ internal class FindDuplicateFilesUI
         public string Sha { get; set; }
     }
 
+    ObservableCollection<File> Files = new ObservableCollection<File>();
+
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         PopulateDuplicateList();
@@ -47,10 +51,15 @@ internal class FindDuplicateFilesUI
     {
         root = root ?? folderPathText.Text;
 
+        Files.Clear();
+
+        if (!Directory.Exists(root))
+        {
+            return;
+        }
+
         string[] allFiles = GetFiles(root);
         var filesByHash = FindDuplicateFiles(allFiles);
-
-        var list = new List<File>();
 
         foreach (var currentBucket in filesByHash)
         {
@@ -58,21 +67,19 @@ internal class FindDuplicateFilesUI
             {
                 foreach (var dupe in currentBucket.Value)
                 {
-                    list.Add(new File(dupe, currentBucket.Key));
+                    Files.Add(new File(dupe, currentBucket.Key));
                 }
             }
         }
-
-        PopulateList(list);
     }
 
-    private void PopulateList(List<File> list)
+    private void InitializeList()
     {
         var view = new GridView();
         view.Columns.Add(new GridViewColumn() { Header = "Path", DisplayMemberBinding = new Binding("Path") });
         listBox.View = view;
 
-        var viewSource = CollectionViewSource.GetDefaultView(list);
+        var viewSource = CollectionViewSource.GetDefaultView(Files);
         viewSource.GroupDescriptions.Add(new PropertyGroupDescription("Sha"));
 
         listBox.GroupStyle.Add(new GroupStyle());
@@ -82,6 +89,7 @@ internal class FindDuplicateFilesUI
 
     ListView listBox;
     TextBox folderPathText;
+    Button rescan;
 
     private object GetContent()
     {
@@ -93,15 +101,31 @@ internal class FindDuplicateFilesUI
             Text = Environment.CurrentDirectory
         };
 
+        rescan = new Button()
+        {
+            Margin = new Thickness(0, 8, 8, 8),
+            Content = "Scan",
+            Padding = new Thickness(4),
+            MinWidth = 75
+        };
+        rescan.Click += (s, e) => PopulateDuplicateList();
+        DockPanel.SetDock(rescan, Dock.Right);
+
+        var topPanel = new DockPanel();
+        topPanel.Children.Add(rescan);
+        topPanel.Children.Add(folderPathText);
+
         listBox = new ListView()
         {
             Margin = new Thickness(8, 0, 8, 8)
         };
         listBox.KeyUp += ListBox_KeyUp;
 
-        DockPanel.SetDock(folderPathText, Dock.Top);
+        InitializeList();
 
-        dockPanel.Children.Add(folderPathText);
+        DockPanel.SetDock(topPanel, Dock.Top);
+
+        dockPanel.Children.Add(topPanel);
         dockPanel.Children.Add(listBox);
 
         return dockPanel;
@@ -114,7 +138,7 @@ internal class FindDuplicateFilesUI
             if (listBox.SelectedItem is File selectedFile)
             {
                 System.IO.File.Delete(selectedFile.Path);
-                PopulateDuplicateList();
+                Files.Remove(selectedFile);
                 e.Handled = true;
             }
         }
@@ -131,17 +155,25 @@ internal class FindDuplicateFilesUI
     {
         var filesByHash = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var file in allFiles)
+        Parallel.ForEach(allFiles, file =>
         {
             var hash = Utilities.SHA1Hash(file);
-            if (!filesByHash.TryGetValue(hash, out HashSet<string> bucket))
+
+            HashSet<string> bucket;
+            lock (filesByHash)
             {
-                bucket = new HashSet<string>();
-                filesByHash[hash] = bucket;
+                if (!filesByHash.TryGetValue(hash, out bucket))
+                {
+                    bucket = new HashSet<string>();
+                    filesByHash[hash] = bucket;
+                }
             }
 
-            bucket.Add(file);
-        }
+            lock (bucket)
+            {
+                bucket.Add(file);
+            }
+        });
 
         return filesByHash;
     }
