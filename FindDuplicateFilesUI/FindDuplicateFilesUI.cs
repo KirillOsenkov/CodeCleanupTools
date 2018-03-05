@@ -123,6 +123,7 @@ internal class FindDuplicateFilesUI
         folderPathText.IsEnabled = enable;
         rescan.IsEnabled = enable;
         progressBar.Visibility = enable ? Visibility.Collapsed : Visibility.Visible;
+        progressBar.IsIndeterminate = !enable;
     }
 
     private object GetContent()
@@ -152,7 +153,6 @@ internal class FindDuplicateFilesUI
             Opacity = 0.5
         };
         progressBar.Visibility = Visibility.Collapsed;
-        progressBar.IsIndeterminate = true;
         var grid = new Grid();
         grid.Children.Add(folderPathText);
         grid.Children.Add(progressBar);
