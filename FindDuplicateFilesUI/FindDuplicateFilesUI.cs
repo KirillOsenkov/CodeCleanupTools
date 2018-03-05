@@ -49,7 +49,7 @@ internal class FindDuplicateFilesUI
         PopulateDuplicateList();
     }
 
-    private void PopulateDuplicateList(string root = null)
+    private async void PopulateDuplicateList(string root = null)
     {
         root = root ?? folderPathText.Text;
 
@@ -60,9 +60,23 @@ internal class FindDuplicateFilesUI
             return;
         }
 
-        string[] allFiles = GetFiles(root);
-        var filesByHash = FindDuplicateFiles(allFiles);
+        try
+        {
+            EnableUI(false);
+            var filesByHash = await Task.Run(() => Scan(root));
+            FillList(filesByHash);
+        }
+        catch
+        {
+        }
+        finally
+        {
+            EnableUI(true);
+        }
+    }
 
+    private void FillList(Dictionary<string, HashSet<string>> filesByHash)
+    {
         foreach (var currentBucket in filesByHash.OrderBy(kvp => kvp.Key))
         {
             if (currentBucket.Value.Count > 1)
@@ -73,6 +87,13 @@ internal class FindDuplicateFilesUI
                 }
             }
         }
+    }
+
+    private Dictionary<string, HashSet<string>> Scan(string root)
+    {
+        string[] allFiles = GetFiles(root);
+        var filesByHash = FindDuplicateFiles(allFiles);
+        return filesByHash;
     }
 
     private void InitializeList()
@@ -96,9 +117,18 @@ internal class FindDuplicateFilesUI
         listBox.ItemsSource = viewSource;
     }
 
+    void EnableUI(bool enable)
+    {
+        listBox.IsEnabled = enable;
+        folderPathText.IsEnabled = enable;
+        rescan.IsEnabled = enable;
+        progressBar.Visibility = enable ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     ListView listBox;
     TextBox folderPathText;
     Button rescan;
+    ProgressBar progressBar;
 
     private object GetContent()
     {
@@ -120,9 +150,21 @@ internal class FindDuplicateFilesUI
         rescan.Click += (s, e) => PopulateDuplicateList();
         DockPanel.SetDock(rescan, Dock.Right);
 
+        progressBar = new ProgressBar()
+        {
+            Margin = new Thickness(8),
+            MinHeight = 23,
+            Opacity = 0.5
+        };
+        progressBar.Visibility = Visibility.Collapsed;
+        progressBar.IsIndeterminate = true;
+        var grid = new Grid();
+        grid.Children.Add(folderPathText);
+        grid.Children.Add(progressBar);
+
         var topPanel = new DockPanel();
         topPanel.Children.Add(rescan);
-        topPanel.Children.Add(folderPathText);
+        topPanel.Children.Add(grid);
 
         listBox = new ListView()
         {
