@@ -209,7 +209,13 @@ internal class FindDuplicateFilesUI
         {
             if (listBox.SelectedItem is File selectedFile)
             {
-                Clipboard.SetText(selectedFile.Path);
+                try
+                {
+                    Clipboard.SetText(selectedFile.Path);
+                }
+                catch
+                {
+                }
             }
         }
     }
