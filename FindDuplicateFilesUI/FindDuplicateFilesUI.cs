@@ -250,7 +250,7 @@ internal class FindDuplicateFilesUI
             {
                 if (!filesByHash.TryGetValue(hash, out bucket))
                 {
-                    bucket = new HashSet<string>();
+                    bucket = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     filesByHash[hash] = bucket;
                 }
             }
@@ -272,7 +272,7 @@ internal class FindDuplicateFilesUI
         {
             if (!filesBySize.TryGetValue(file.Length, out var bucket))
             {
-                bucket = new HashSet<string>();
+                bucket = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 filesBySize[file.Length] = bucket;
             }
 
