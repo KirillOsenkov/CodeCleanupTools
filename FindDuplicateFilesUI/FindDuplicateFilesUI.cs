@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 
 internal class FindDuplicateFilesUI
 {
@@ -61,11 +63,11 @@ internal class FindDuplicateFilesUI
         string[] allFiles = GetFiles(root);
         var filesByHash = FindDuplicateFiles(allFiles);
 
-        foreach (var currentBucket in filesByHash)
+        foreach (var currentBucket in filesByHash.OrderBy(kvp => kvp.Key))
         {
             if (currentBucket.Value.Count > 1)
             {
-                foreach (var dupe in currentBucket.Value)
+                foreach (var dupe in currentBucket.Value.OrderBy(s => s))
                 {
                     Files.Add(new File(dupe, currentBucket.Key));
                 }
@@ -82,7 +84,14 @@ internal class FindDuplicateFilesUI
         var viewSource = CollectionViewSource.GetDefaultView(Files);
         viewSource.GroupDescriptions.Add(new PropertyGroupDescription("Sha"));
 
-        listBox.GroupStyle.Add(new GroupStyle());
+        var groupStyle = new GroupStyle();
+        var headerTemplate = new DataTemplate();
+        var frameworkElementFactory = new FrameworkElementFactory(typeof(TextBlock));
+        frameworkElementFactory.SetValue(TextBlock.ForegroundProperty, Brushes.Gray);
+        frameworkElementFactory.SetValue(TextBlock.TextProperty, new Binding("Name"));
+        headerTemplate.VisualTree = frameworkElementFactory;
+        groupStyle.HeaderTemplate = headerTemplate;
+        listBox.GroupStyle.Add(groupStyle);
 
         listBox.ItemsSource = viewSource;
     }
@@ -120,6 +129,7 @@ internal class FindDuplicateFilesUI
             Margin = new Thickness(8, 0, 8, 8)
         };
         listBox.KeyUp += ListBox_KeyUp;
+        listBox.IsSynchronizedWithCurrentItem = true;
 
         InitializeList();
 
@@ -137,9 +147,27 @@ internal class FindDuplicateFilesUI
         {
             if (listBox.SelectedItem is File selectedFile)
             {
+                var view = CollectionViewSource.GetDefaultView(Files);
+                view.MoveCurrentToNext();
+
+                // https://stackoverflow.com/q/7363777/37899
+                var container = (UIElement)listBox.ItemContainerGenerator.ContainerFromItem(listBox.SelectedItem);
+                if (container != null)
+                {
+                    container.Focus();
+                }
+
                 System.IO.File.Delete(selectedFile.Path);
                 Files.Remove(selectedFile);
+
                 e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.C && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+        {
+            if (listBox.SelectedItem is File selectedFile)
+            {
+                Clipboard.SetText(selectedFile.Path);
             }
         }
     }
