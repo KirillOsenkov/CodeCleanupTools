@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -185,38 +186,46 @@ internal class FindDuplicateFilesUI
 
     private void ListBox_KeyUp(object sender, KeyEventArgs e)
     {
+        var selectedFile = listBox.SelectedItem as File;
+        if (selectedFile == null)
+        {
+            return;
+        }
+
         if (e.Key == Key.Delete)
         {
-            if (listBox.SelectedItem is File selectedFile)
+            var view = CollectionViewSource.GetDefaultView(Files);
+            view.MoveCurrentToNext();
+
+            // https://stackoverflow.com/q/7363777/37899
+            var container = (UIElement)listBox.ItemContainerGenerator.ContainerFromItem(listBox.SelectedItem);
+            if (container != null)
             {
-                var view = CollectionViewSource.GetDefaultView(Files);
-                view.MoveCurrentToNext();
-
-                // https://stackoverflow.com/q/7363777/37899
-                var container = (UIElement)listBox.ItemContainerGenerator.ContainerFromItem(listBox.SelectedItem);
-                if (container != null)
-                {
-                    container.Focus();
-                }
-
-                System.IO.File.Delete(selectedFile.Path);
-                Files.Remove(selectedFile);
-
-                e.Handled = true;
+                container.Focus();
             }
+
+            System.IO.File.Delete(selectedFile.Path);
+            Files.Remove(selectedFile);
+
+            e.Handled = true;
         }
         else if (e.Key == Key.C && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
         {
-            if (listBox.SelectedItem is File selectedFile)
+            try
             {
-                try
-                {
-                    Clipboard.SetText(selectedFile.Path);
-                }
-                catch
-                {
-                }
+                Clipboard.SetText(selectedFile.Path);
             }
+            catch
+            {
+            }
+        }
+        else if (e.Key == Key.O && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+        {
+            Process.Start("explorer", "/select, \"" + selectedFile.Path + "\"");
+        }
+        else if (e.Key == Key.Return)
+        {
+            Process.Start(selectedFile.Path, null);
         }
     }
 
