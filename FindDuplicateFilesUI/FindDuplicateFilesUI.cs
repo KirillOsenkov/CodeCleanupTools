@@ -19,18 +19,6 @@ internal class FindDuplicateFilesUI
         new FindDuplicateFilesUI().ShowUI();
     }
 
-    public void ShowUI()
-    {
-        var app = new Application();
-        var window = new Window();
-        window.Content = GetContent();
-        window.Background = SystemColors.ControlBrush;
-        window.Title = "Find duplicate files";
-        window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        window.Loaded += Window_Loaded;
-        app.Run(window);
-    }
-
     public class File
     {
         public File(string path, string key)
@@ -43,7 +31,46 @@ internal class FindDuplicateFilesUI
         public string Sha { get; set; }
     }
 
-    ObservableCollection<File> Files = new ObservableCollection<File>();
+    private ObservableCollection<File> Files = new ObservableCollection<File>();
+
+    private ListView listBox;
+    private TextBox folderPathText;
+    private Button rescan;
+    private ProgressBar progressBar;
+    private ContextMenu contextMenu;
+
+    public void ShowUI()
+    {
+        var app = new Application();
+        var window = new Window();
+        window.Content = GetContent();
+        window.Background = SystemColors.ControlBrush;
+        window.Title = "Find duplicate files";
+        window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        window.Loaded += Window_Loaded;
+        app.Run(window);
+    }
+
+    private void InitializeList()
+    {
+        var view = new GridView();
+        view.Columns.Add(new GridViewColumn() { Header = "Path", DisplayMemberBinding = new Binding("Path") });
+        listBox.View = view;
+
+        var viewSource = CollectionViewSource.GetDefaultView(Files);
+        viewSource.GroupDescriptions.Add(new PropertyGroupDescription("Sha"));
+
+        var groupStyle = new GroupStyle();
+        var headerTemplate = new DataTemplate();
+        var frameworkElementFactory = new FrameworkElementFactory(typeof(TextBlock));
+        frameworkElementFactory.SetValue(TextBlock.ForegroundProperty, Brushes.Gray);
+        frameworkElementFactory.SetValue(TextBlock.TextProperty, new Binding("Name"));
+        headerTemplate.VisualTree = frameworkElementFactory;
+        groupStyle.HeaderTemplate = headerTemplate;
+        listBox.GroupStyle.Add(groupStyle);
+
+        listBox.ItemsSource = viewSource;
+    }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
@@ -90,47 +117,13 @@ internal class FindDuplicateFilesUI
         }
     }
 
-    private Dictionary<string, HashSet<string>> Scan(string root)
-    {
-        var allFiles = GetFiles(root);
-        var filesByHash = FindDuplicateFiles(allFiles);
-        return filesByHash;
-    }
-
-    private void InitializeList()
-    {
-        var view = new GridView();
-        view.Columns.Add(new GridViewColumn() { Header = "Path", DisplayMemberBinding = new Binding("Path") });
-        listBox.View = view;
-
-        var viewSource = CollectionViewSource.GetDefaultView(Files);
-        viewSource.GroupDescriptions.Add(new PropertyGroupDescription("Sha"));
-
-        var groupStyle = new GroupStyle();
-        var headerTemplate = new DataTemplate();
-        var frameworkElementFactory = new FrameworkElementFactory(typeof(TextBlock));
-        frameworkElementFactory.SetValue(TextBlock.ForegroundProperty, Brushes.Gray);
-        frameworkElementFactory.SetValue(TextBlock.TextProperty, new Binding("Name"));
-        headerTemplate.VisualTree = frameworkElementFactory;
-        groupStyle.HeaderTemplate = headerTemplate;
-        listBox.GroupStyle.Add(groupStyle);
-
-        listBox.ItemsSource = viewSource;
-    }
-
-    void EnableUI(bool enable)
+    private void EnableUI(bool enable)
     {
         listBox.IsEnabled = enable;
         folderPathText.IsEnabled = enable;
         rescan.IsEnabled = enable;
         progressBar.Visibility = enable ? Visibility.Collapsed : Visibility.Visible;
     }
-
-    ListView listBox;
-    TextBox folderPathText;
-    Button rescan;
-    ProgressBar progressBar;
-    ContextMenu contextMenu;
 
     private object GetContent()
     {
@@ -285,6 +278,13 @@ internal class FindDuplicateFilesUI
 
         System.IO.File.Delete(selectedFile.Path);
         Files.Remove(selectedFile);
+    }
+
+    private Dictionary<string, HashSet<string>> Scan(string root)
+    {
+        var allFiles = GetFiles(root);
+        var filesByHash = FindDuplicateFiles(allFiles);
+        return filesByHash;
     }
 
     private static FileInfo[] GetFiles(string root)
