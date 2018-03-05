@@ -92,7 +92,7 @@ internal class FindDuplicateFilesUI
 
     private Dictionary<string, HashSet<string>> Scan(string root)
     {
-        string[] allFiles = GetFiles(root);
+        var allFiles = GetFiles(root);
         var filesByHash = FindDuplicateFiles(allFiles);
         return filesByHash;
     }
@@ -229,18 +229,19 @@ internal class FindDuplicateFilesUI
         }
     }
 
-    private static string[] GetFiles(string root)
+    private static FileInfo[] GetFiles(string root)
     {
         var pattern = "*.*";
-        var allFiles = Directory.GetFiles(root, pattern, SearchOption.AllDirectories);
+        var allFiles = new DirectoryInfo(root).GetFiles(pattern, SearchOption.AllDirectories);
         return allFiles;
     }
 
-    public static Dictionary<string, HashSet<string>> FindDuplicateFiles(string[] allFiles)
+    public static Dictionary<string, HashSet<string>> FindDuplicateFiles(FileInfo[] allFiles)
     {
-        var filesByHash = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        var candidates = ExcludeUniqueFilesBySize(allFiles);
 
-        Parallel.ForEach(allFiles, file =>
+        var filesByHash = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        Parallel.ForEach(candidates, file =>
         {
             var hash = Utilities.SHA1Hash(file);
 
@@ -261,5 +262,32 @@ internal class FindDuplicateFilesUI
         });
 
         return filesByHash;
+    }
+
+    private static IEnumerable<string> ExcludeUniqueFilesBySize(IEnumerable<FileInfo> allFiles)
+    {
+        var filesBySize = new Dictionary<long, HashSet<string>>();
+
+        foreach (var file in allFiles)
+        {
+            if (!filesBySize.TryGetValue(file.Length, out var bucket))
+            {
+                bucket = new HashSet<string>();
+                filesBySize[file.Length] = bucket;
+            }
+
+            bucket.Add(file.FullName);
+        }
+
+        var result = new List<string>();
+        foreach (var kvp in filesBySize)
+        {
+            if (kvp.Value.Count > 1)
+            {
+                result.AddRange(kvp.Value);
+            }
+        }
+
+        return result;
     }
 }
