@@ -130,6 +130,7 @@ internal class FindDuplicateFilesUI
     TextBox folderPathText;
     Button rescan;
     ProgressBar progressBar;
+    ContextMenu contextMenu;
 
     private object GetContent()
     {
@@ -174,6 +175,23 @@ internal class FindDuplicateFilesUI
         listBox.KeyUp += ListBox_KeyUp;
         listBox.IsSynchronizedWithCurrentItem = true;
 
+        contextMenu = new ContextMenu();
+        var menuDelete = new MenuItem() { Header = "Delete" };
+        menuDelete.Click += (s, e) => DeleteSelectedItem();
+        var menuCopy = new MenuItem { Header = "Copy" };
+        menuCopy.Click += (s, e) => CopySelectedItem();
+        var menuOpenFolder = new MenuItem { Header = "Open in Folder" };
+        menuOpenFolder.Click += (s, e) => OpenSelectedFileInFolder();
+        var menuOpen = new MenuItem { Header = "Open" };
+        menuOpen.Click += (s, e) => OpenSelectedFile();
+
+        contextMenu.Items.Add(menuOpen);
+        contextMenu.Items.Add(menuOpenFolder);
+        contextMenu.Items.Add(menuCopy);
+        contextMenu.Items.Add(menuDelete);
+
+        listBox.ContextMenu = contextMenu;
+
         InitializeList();
 
         DockPanel.SetDock(topPanel, Dock.Top);
@@ -186,47 +204,87 @@ internal class FindDuplicateFilesUI
 
     private void ListBox_KeyUp(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Delete)
+        {
+            DeleteSelectedItem();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.C && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+        {
+            CopySelectedItem();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.O && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+        {
+            OpenSelectedFileInFolder();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Return)
+        {
+            OpenSelectedFile();
+            e.Handled = true;
+        }
+    }
+
+    private void OpenSelectedFile()
+    {
         var selectedFile = listBox.SelectedItem as File;
         if (selectedFile == null)
         {
             return;
         }
 
-        if (e.Key == Key.Delete)
-        {
-            var view = CollectionViewSource.GetDefaultView(Files);
-            view.MoveCurrentToNext();
+        Process.Start(selectedFile.Path, null);
+    }
 
-            // https://stackoverflow.com/q/7363777/37899
-            var container = (UIElement)listBox.ItemContainerGenerator.ContainerFromItem(listBox.SelectedItem);
-            if (container != null)
-            {
-                container.Focus();
-            }
+    private void OpenSelectedFileInFolder()
+    {
+        var selectedFile = listBox.SelectedItem as File;
+        if (selectedFile == null)
+        {
+            return;
+        }
 
-            System.IO.File.Delete(selectedFile.Path);
-            Files.Remove(selectedFile);
+        Process.Start("explorer", "/select, \"" + selectedFile.Path + "\"");
+    }
 
-            e.Handled = true;
-        }
-        else if (e.Key == Key.C && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+    private void CopySelectedItem()
+    {
+        var selectedFile = listBox.SelectedItem as File;
+        if (selectedFile == null)
         {
-            try
-            {
-                Clipboard.SetText(selectedFile.Path);
-            }
-            catch
-            {
-            }
+            return;
         }
-        else if (e.Key == Key.O && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+
+        try
         {
-            Process.Start("explorer", "/select, \"" + selectedFile.Path + "\"");
+            Clipboard.SetText(selectedFile.Path);
         }
-        else if (e.Key == Key.Return)
+        catch
         {
-            Process.Start(selectedFile.Path, null);
         }
+    }
+
+    private void DeleteSelectedItem()
+    {
+        var selectedFile = listBox.SelectedItem as File;
+        if (selectedFile == null)
+        {
+            return;
+        }
+
+        var view = CollectionViewSource.GetDefaultView(Files);
+        view.MoveCurrentToNext();
+
+        // https://stackoverflow.com/q/7363777/37899
+        var container = (UIElement)listBox.ItemContainerGenerator.ContainerFromItem(listBox.SelectedItem);
+        if (container != null)
+        {
+            container.Focus();
+        }
+
+        System.IO.File.Delete(selectedFile.Path);
+        Files.Remove(selectedFile);
     }
 
     private static FileInfo[] GetFiles(string root)
