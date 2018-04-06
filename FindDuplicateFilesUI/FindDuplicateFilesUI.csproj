@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net461</TargetFramework>
     <OutputType>winexe</OutputType>
+    <AssemblyName>Dedup</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\CommonUtilities.cs" Link="CommonUtilities.cs" />
