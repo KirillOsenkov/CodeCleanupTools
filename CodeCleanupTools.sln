@@ -34,6 +34,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FindDuplicateFilesUI", "Fin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sha", "sha\sha.csproj", "{48F5B934-8BD4-4F92-907B-87B29F0747EC}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dos2unix", "dos2unix\dos2unix.csproj", "{1102E3FC-C1D1-4129-8ED4-08197CC84021}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -104,6 +106,10 @@ Global
 		{48F5B934-8BD4-4F92-907B-87B29F0747EC}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{48F5B934-8BD4-4F92-907B-87B29F0747EC}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{48F5B934-8BD4-4F92-907B-87B29F0747EC}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{1102E3FC-C1D1-4129-8ED4-08197CC84021}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{1102E3FC-C1D1-4129-8ED4-08197CC84021}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{1102E3FC-C1D1-4129-8ED4-08197CC84021}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{1102E3FC-C1D1-4129-8ED4-08197CC84021}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
