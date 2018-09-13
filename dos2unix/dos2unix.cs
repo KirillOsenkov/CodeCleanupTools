@@ -24,8 +24,8 @@ class dos2unix
 
     private static void PrintHelp()
     {
-        Console.WriteLine("A tool to convert a file from CRLF to LF");
-        Console.WriteLine("  Usage: dos2unix <input> <output>");
+        Console.WriteLine("A tool to convert a file from CRLF to LF. Rewrites the file in-place.");
+        Console.WriteLine("    Usage: dos2unix <filepath>");
     }
 
     private static void Convert(string filePath)
