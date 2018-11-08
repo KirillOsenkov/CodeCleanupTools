@@ -317,6 +317,15 @@ namespace RemoveUnusedReferences
             Console.WriteLine(message);
             File.AppendAllText(reportFileName, message + Environment.NewLine);
         }
+
+        public static AssemblyName[] GetReferences(string filePath)
+        {
+            using (var assemblyDefinition = AssemblyDefinition.ReadAssembly(filePath))
+            {
+                var references = assemblyDefinition.MainModule.AssemblyReferences.Select(r => new AssemblyName(r.FullName)).ToArray();
+                return references;
+            }
+        }
     }
 
     public class ProjectInfo
@@ -335,10 +344,7 @@ namespace RemoveUnusedReferences
             {
                 AssemblyName = AssemblyName.GetAssemblyName(TargetPath);
 
-                using (var assemblyDefinition = AssemblyDefinition.ReadAssembly(TargetPath))
-                {
-                    References = assemblyDefinition.MainModule.AssemblyReferences.Select(r => new AssemblyName(r.FullName)).ToArray();
-                }
+                References = SolutionAnalyzer.GetReferences(TargetPath);
             }
 
             Name = projectName;
