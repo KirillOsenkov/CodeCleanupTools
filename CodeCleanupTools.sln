@@ -36,6 +36,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sha", "sha\sha.csproj", "{4
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dos2unix", "dos2unix\dos2unix.csproj", "{1102E3FC-C1D1-4129-8ED4-08197CC84021}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FindUnusedReferences", "FindUnusedReferences\FindUnusedReferences.csproj", "{EAF3A265-13B6-415F-8A52-BD242ECB7405}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -110,6 +112,10 @@ Global
 		{1102E3FC-C1D1-4129-8ED4-08197CC84021}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{1102E3FC-C1D1-4129-8ED4-08197CC84021}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{1102E3FC-C1D1-4129-8ED4-08197CC84021}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{EAF3A265-13B6-415F-8A52-BD242ECB7405}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{EAF3A265-13B6-415F-8A52-BD242ECB7405}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{EAF3A265-13B6-415F-8A52-BD242ECB7405}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{EAF3A265-13B6-415F-8A52-BD242ECB7405}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
