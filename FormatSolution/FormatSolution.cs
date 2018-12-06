@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.MSBuild;
@@ -21,8 +23,12 @@ class FormatSolution
             return;
         }
 
+        MSBuildLocator.RegisterDefaults();
+
         var workspace = MSBuildWorkspace.Create();
         var solution = workspace.OpenSolutionAsync(slnPath).GetAwaiter().GetResult();
+        solution = DeduplicateProjectReferences(solution);
+
         var projectIds = solution.ProjectIds;
         foreach (var projectId in projectIds)
         {
@@ -31,6 +37,29 @@ class FormatSolution
         }
 
         workspace.TryApplyChanges(solution);
+    }
+
+    private static Solution DeduplicateProjectReferences(Solution solution)
+    {
+        foreach (var projectId in solution.ProjectIds.ToArray())
+        {
+            var project = solution.GetProject(projectId);
+
+            var distinctProjectReferences = project.AllProjectReferences.Distinct().ToArray();
+            if (distinctProjectReferences.Length < project.AllProjectReferences.Count)
+            {
+                var duplicates = project.AllProjectReferences.GroupBy(p => p).Where(g => g.Count() > 1).Select(g => g.Key).ToArray();
+                foreach (var duplicate in duplicates)
+                {
+                    Console.WriteLine($"Duplicate project reference to {duplicate.ProjectId.ToString()} in project: {project.Name}");
+                }
+
+                var newProject = project.WithProjectReferences(distinctProjectReferences);
+                solution = newProject.Solution;
+            }
+        }
+
+        return solution;
     }
 
     private static Solution ProcessProject(Project project)
