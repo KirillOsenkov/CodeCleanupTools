@@ -5,8 +5,18 @@ public class Utilities
 {
     public static string SHA1Hash(string filePath)
     {
+        return Hash(filePath, new SHA1Managed());
+    }
+
+    public static string SHA256Hash(string filePath)
+    {
+        return Hash(filePath, new SHA256Managed());
+    }
+
+    public static string Hash(string filePath, HashAlgorithm hash)
+    {
         using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
-        using (var hash = new SHA1Managed())
+        using (hash)
         {
             var result = hash.ComputeHash(stream);
             return ByteArrayToHexString(result);
