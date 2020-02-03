@@ -96,11 +96,17 @@ class ListBinaryInfo
 
         var filtered = files.Where(f => ShouldIncludeFile(f)).ToArray();
 
+        var targetFrameworks = new Dictionary<string, List<string>>();
+
         foreach (var assemblyNameGroup in filtered.Select(f => FileInfo.Get(f)).GroupBy(f => f.AssemblyName).OrderBy(g => g.Key))
         {
             Highlight(assemblyNameGroup.Key, ConsoleColor.Cyan);
             foreach (var shaGroup in assemblyNameGroup.GroupBy(f => f.Sha))
             {
+                if (shaGroup.Count() > 1)
+                {
+                }
+
                 var first = shaGroup.First();
                 Highlight("    SHA: " + shaGroup.Key, ConsoleColor.DarkGray, newLineAtEnd: false);
 
@@ -139,6 +145,18 @@ class ListBinaryInfo
                     if (!string.IsNullOrEmpty(targetFramework))
                     {
                         Highlight(" " + targetFramework, ConsoleColor.Blue, newLineAtEnd: false);
+                        AddTargetFramework(targetFramework, first.FilePath);
+                    }
+
+                    void AddTargetFramework(string tf, string filePath)
+                    {
+                        if (!targetFrameworks.TryGetValue(tf, out var bucket))
+                        {
+                            bucket = new List<string>();
+                            targetFrameworks[tf] = bucket;
+                        }
+
+                        bucket.Add(filePath);
                     }
 #endif
                 }
@@ -150,6 +168,17 @@ class ListBinaryInfo
                     Highlight("        " + file.FilePath, ConsoleColor.White);
                 }
             }
+        }
+
+        foreach (var tf in targetFrameworks.OrderBy(s => s.Key))
+        {
+            Highlight(tf.Key, ConsoleColor.Yellow);
+            foreach (var item in tf.Value.OrderBy(s => s))
+            {
+                Highlight("    " + item, ConsoleColor.Gray);
+            }
+
+            Console.WriteLine();
         }
     }
 
