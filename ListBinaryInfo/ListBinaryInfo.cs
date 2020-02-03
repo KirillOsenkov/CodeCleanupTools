@@ -5,10 +5,18 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
+#if ShowTargetFramework
+using Mono.Cecil;
+#endif
+
 class ListBinaryInfo
 {
     private static string[] netfxToolsPaths =
     {
+        @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools",
+        @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.7.2 Tools",
+        @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.7.1 Tools",
+        @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.7 Tools",
         @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.2 Tools",
         @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools",
         @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools",
@@ -76,21 +84,44 @@ class ListBinaryInfo
 
                 Highlight(" " + shaGroup.First().FileSize.ToString("N0"), ConsoleColor.Gray, newLineAtEnd: false);
 
-                var signedText = first.FullSigned;
-                if (first.Signed != "Signed" && first.Signed != null)
+                if (first.AssemblyName != NotAManagedAssembly)
                 {
-                    signedText += " (" + first.Signed + ")";
+                    current = first;
+                    CheckSigned(first.FilePath);
+                    CheckPlatform(first.FilePath);
+
+                    var signedText = first.FullSigned;
+                    if (first.Signed != "Signed" && first.Signed != null)
+                    {
+                        signedText += "(" + first.Signed + ")";
+                    }
+
+                    if (!string.IsNullOrEmpty(signedText))
+                    {
+                        Highlight($" {signedText}", ConsoleColor.DarkGray, newLineAtEnd: false);
+                    }
+
+                    var platformText = first.Architecture;
+                    if (first.Platform != "32BITPREF : 0" && first.Platform != null)
+                    {
+                        platformText += "(" + first.Platform + ")";
+                    }
+
+                    if (!string.IsNullOrEmpty(platformText))
+                    {
+                        Highlight(" " + platformText, ConsoleColor.Gray, newLineAtEnd: false);
+                    }
+
+#if ShowTargetFramework
+                    var targetFramework = GetTargetFramework(first.FilePath);
+                    if (!string.IsNullOrEmpty(targetFramework))
+                    {
+                        Highlight(" " + targetFramework, ConsoleColor.Blue, newLineAtEnd: false);
+                    }
+#endif
                 }
 
-                Highlight($" {signedText} ", ConsoleColor.DarkGray, newLineAtEnd: false);
-
-                var platformText = first.Architecture;
-                if (first.Platform != "32BITPREF : 0" && first.Platform != null)
-                {
-                    platformText += " (" + first.Platform + ")";
-                }
-
-                Highlight(platformText, ConsoleColor.Gray);
+                Console.WriteLine();
 
                 foreach (var file in shaGroup.OrderBy(f => f.FilePath))
                 {
@@ -98,6 +129,55 @@ class ListBinaryInfo
                 }
             }
         }
+    }
+
+#if ShowTargetFramework
+    private static string GetTargetFramework(string filePath)
+    {
+        try
+        {
+            using (var module = ModuleDefinition.ReadModule(filePath))
+            {
+                var targetFrameworkAttribute = module.GetCustomAttributes().FirstOrDefault(a => a.AttributeType.FullName == "System.Runtime.Versioning.TargetFrameworkAttribute");
+                if (targetFrameworkAttribute != null)
+                {
+                    var value = targetFrameworkAttribute.ConstructorArguments[0].Value;
+                    return ShortenTargetFramework(value.ToString());
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return null;
+    }
+#endif
+
+    private static readonly Dictionary<string, string> targetFrameworkNames = new Dictionary<string, string>()
+    {
+        { ".NETFramework,Version=v", "net" },
+        { ".NETCoreApp,Version=v", "netcoreapp" },
+        { ".NETStandard,Version=v", "netstandard" }
+    };
+
+    private static string ShortenTargetFramework(string name)
+    {
+        foreach (var kvp in targetFrameworkNames)
+        {
+            if (name.StartsWith(kvp.Key))
+            {
+                var shortened = name.Substring(kvp.Key.Length);
+                if (kvp.Value == "net")
+                {
+                    shortened = shortened.Replace(".", "");
+                }
+
+                return kvp.Value + shortened;
+            }
+        }
+
+        return name;
     }
 
     private static void FindCorflagsAndSn()
@@ -108,7 +188,7 @@ class ListBinaryInfo
                 Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
                 netfxToolsPath,
                 "corflags.exe");
-            if (File.Exists(path) && corflagsExe == null)
+            if (corflagsExe == null && File.Exists(path))
             {
                 corflagsExe = path;
             }
@@ -117,7 +197,7 @@ class ListBinaryInfo
                 Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
                 netfxToolsPath,
                 @"sn.exe");
-            if (File.Exists(path) && snExe == null)
+            if (snExe == null && File.Exists(path))
             {
                 snExe = path;
             }
@@ -151,12 +231,6 @@ class ListBinaryInfo
                 Sha = Utilities.SHA1Hash(filePath),
                 FileSize = new System.IO.FileInfo(filePath).Length
             };
-            current = fileInfo;
-            if (fileInfo.AssemblyName != NotAManagedAssembly)
-            {
-                CheckSigned(filePath);
-                CheckPlatform(filePath);
-            }
 
             return fileInfo;
         }
