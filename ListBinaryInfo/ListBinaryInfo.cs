@@ -24,6 +24,26 @@ class ListBinaryInfo
         @"Microsoft SDKs\Windows\v7.0A\bin",
     };
 
+    private static readonly string[] excludedLocations =
+    {
+        "Contents/Resources/lib/monodevelop/AddIns/designer/Xamarin.iOSDesigner/MonoTouchDesignServer.app",
+        "Contents/Resources/lib/monodevelop/AddIns/designer/Xamarin.iOSDesigner/MonoTouchDesignServerTVOS.app",
+        "Contents/Resources/lib/monodevelop/AddIns/designer/Xamarin.iOSDesigner/MonoTouchDesignServerUnified.app",
+        "Contents/Resources/lib/monodevelop/AddIns/designer/Xamarin.iOSDesigner/XamarinFormsPrevieweriOS.app",
+        "Contents/Resources/lib/monodevelop/AddIns/docker/MonoDevelop.Docker/MSBuild/Sdks/Microsoft.Docker.Sdk",
+        "Contents/Resources/lib/monodevelop/AddIns/docker/MonoDevelop.Docker/mscorlib.dll",
+        "Contents/Resources/lib/monodevelop/AddIns/DotNetCore.Debugger/Adapter",
+        "Contents/Resources/lib/monodevelop/AddIns/MonoDevelop.AzureFunctions/azure-functions-cli",
+        "Contents/Resources/lib/monodevelop/AddIns/MonoDevelop.UnitTesting/NUnit3/Mono.Cecil.dll",
+        "Contents/Resources/lib/monodevelop/AddIns/MonoDevelop.UnitTesting/VsTestConsole",
+        "Contents/Resources/lib/monodevelop/AddIns/MonoDevelop.Unity/Editor",
+        "Contents/Resources/lib/monodevelop/AddIns/Xamarin.Ide.Identity",
+        "Contents/Resources/lib/monodevelop/AddIns/Xamarin.Interactive.XS/Xamarin Inspector.app",
+        "Contents/Resources/lib/monodevelop/bin/Microsoft.VisualStudio.Imaging.dll",
+        "Contents/Resources/lib/monodevelop/bin/ServiceHub",
+        "Contents/Resources/lib/monodevelop/AddIns/MonoDevelop.MonoDroid/Microsoft.CodeAnalysis.Workspaces.MSBuild.dll",
+    };
+
     private static string corflagsExe;
     private static string snExe;
 
@@ -74,7 +94,9 @@ class ListBinaryInfo
             }
         }
 
-        foreach (var assemblyNameGroup in files.Select(f => FileInfo.Get(f)).GroupBy(f => f.AssemblyName).OrderBy(g => g.Key))
+        var filtered = files.Where(f => ShouldIncludeFile(f)).ToArray();
+
+        foreach (var assemblyNameGroup in filtered.Select(f => FileInfo.Get(f)).GroupBy(f => f.AssemblyName).OrderBy(g => g.Key))
         {
             Highlight(assemblyNameGroup.Key, ConsoleColor.Cyan);
             foreach (var shaGroup in assemblyNameGroup.GroupBy(f => f.Sha))
@@ -129,6 +151,24 @@ class ListBinaryInfo
                 }
             }
         }
+    }
+
+    private static bool ShouldIncludeFile(string filePath)
+    {
+        if (filePath.EndsWith(".resources.dll"))
+        {
+            return false;
+        }
+
+        foreach (var excludePattern in excludedLocations)
+        {
+            if (filePath.IndexOf(excludePattern.Replace('/', '\\')) != -1)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 #if ShowTargetFramework

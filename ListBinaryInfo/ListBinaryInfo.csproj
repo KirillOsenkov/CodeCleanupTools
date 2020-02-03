@@ -8,7 +8,7 @@
     <AssemblyTitle>$(Description)</AssemblyTitle>
     <PackageTags>assembly version signed list tool dotnet</PackageTags>
     <DebugType>embedded</DebugType>
-    <ShowTargetFramework>false</ShowTargetFramework>
+    <ShowTargetFramework>true</ShowTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="$(ShowTargetFramework) == true">
     <DefineConstants>$(DefineConstants);ShowTargetFramework</DefineConstants>
