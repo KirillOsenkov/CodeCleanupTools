@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>timing</AssemblyName>
+    <TargetFramework>net5.0</TargetFramework>
     <RuntimeIdentifiers>win10-x64;osx.10.11-x64</RuntimeIdentifiers>
     <OutputType>Exe</OutputType>
     <VersionPrefix>2.0.0</VersionPrefix>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 </Project>

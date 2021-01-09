@@ -13,6 +13,7 @@ namespace Time
             {
                 Console.WriteLine(@"Usage: time <process> <arguments>
     Prints the duration of a process invocation.");
+                return;
             }
 
             var processFilePath = args[0];
@@ -59,8 +60,54 @@ namespace Time
             process.WaitForExit();
 
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(stopwatch.Elapsed.ToString("mm':'ss'.'fff"));
+            Console.WriteLine(ToDisplayString(stopwatch.Elapsed));
             Console.ForegroundColor = ConsoleColor.Gray;
+        }
+
+        public static string ToDisplayString(TimeSpan span, bool highPrecision = true)
+        {
+            if (span.TotalMilliseconds < 1)
+            {
+                return "";
+            }
+
+            string prefix = "";
+
+            if (span.TotalDays > 0)
+            {
+                prefix = $"{span.TotalDays} days ";
+            }
+
+            if (span.TotalSeconds > 3600)
+            {
+                return prefix + span.ToString(@"h\:mm\:ss");
+            }
+
+            if (span.TotalSeconds > 60)
+            {
+                if (highPrecision)
+                {
+                    return span.ToString(@"m\:ss\.fff");
+                }
+                else
+                {
+                    return span.ToString(@"m\:ss");
+                }
+            }
+
+            if (span.TotalMilliseconds > 1000)
+            {
+                if (highPrecision)
+                {
+                    return span.ToString(@"s\.fff") + " s";
+                }
+                else
+                {
+                    return span.Seconds + " s";
+                }
+            }
+
+            return span.Milliseconds + " ms";
         }
 
         private static string ResolveFromPath(string processFilePath)
