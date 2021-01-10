@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -37,6 +37,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dos2unix", "dos2unix\dos2unix.csproj", "{1102E3FC-C1D1-4129-8ED4-08197CC84021}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FindUnusedReferences", "FindUnusedReferences\FindUnusedReferences.csproj", "{EAF3A265-13B6-415F-8A52-BD242ECB7405}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiskSpace", "DiskSpace\DiskSpace.csproj", "{C78C8D75-35DB-4E7E-9A69-81312895F9F6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -116,6 +118,10 @@ Global
 		{EAF3A265-13B6-415F-8A52-BD242ECB7405}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{EAF3A265-13B6-415F-8A52-BD242ECB7405}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{EAF3A265-13B6-415F-8A52-BD242ECB7405}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{C78C8D75-35DB-4E7E-9A69-81312895F9F6}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{C78C8D75-35DB-4E7E-9A69-81312895F9F6}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{C78C8D75-35DB-4E7E-9A69-81312895F9F6}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{C78C8D75-35DB-4E7E-9A69-81312895F9F6}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
