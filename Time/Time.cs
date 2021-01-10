@@ -71,21 +71,19 @@ namespace Time
                 return "";
             }
 
-            string prefix = "";
-
-            if (span.TotalDays > 0)
+            if (span.Days > 0)
             {
-                prefix = $"{span.TotalDays} days ";
+                return $"{span.Days} days {span:h\\:mm\\:ss}";
             }
 
             if (span.TotalSeconds > 3600)
             {
-                return prefix + span.ToString(@"h\:mm\:ss");
+                return span.ToString(@"h\:mm\:ss");
             }
 
             if (span.TotalSeconds > 60)
             {
-                if (highPrecision)
+                if (highPrecision && span.Milliseconds != 0)
                 {
                     return span.ToString(@"m\:ss\.fff");
                 }
