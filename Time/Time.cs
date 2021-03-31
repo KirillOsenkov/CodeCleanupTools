@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -7,13 +8,34 @@ namespace Time
 {
     public class Time
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
             if (args.Length == 0)
             {
-                Console.WriteLine(@"Usage: time <process> <arguments>
-    Prints the duration of a process invocation.");
-                return;
+                PrintHelp();
+                return 0;
+            }
+
+            int repeat = 1;
+
+            var firstArg = args[0];
+            if (firstArg.StartsWith("-") || firstArg.StartsWith("/"))
+            {
+                firstArg = firstArg.Substring(1);
+                if (int.TryParse(firstArg, out repeat) && repeat > 0 && repeat < 1000000)
+                {
+                    args = args.Skip(1).ToArray();
+                    if (args.Length == 0)
+                    {
+                        PrintHelp();
+                        return 3;
+                    }
+                }
+                else
+                {
+                    Console.Error.WriteLine("Unknown first argument: " + firstArg);
+                    return 1;
+                }
             }
 
             var processFilePath = args[0];
@@ -42,13 +64,65 @@ namespace Time
                     else
                     {
                         Console.Error.WriteLine($"Application {processFilePath} doesn't exist");
-                        return;
+                        return 2;
                     }
                 }
             }
 
             processFilePath = Path.GetFullPath(processFilePath);
 
+            var results = new List<ProcessRunResult>();
+            var totalDuration = TimeSpan.Zero;
+
+            for (int i = 0; i < repeat; i++)
+            {
+                var result = RunProcess(processFilePath, arguments);
+                results.Add(result);
+                Log($"Iteration {i + 1}: {ToDisplayString(result.Elapsed)}", ConsoleColor.Green);
+                totalDuration += result.Elapsed;
+                if (result.ExitCode != 0)
+                {
+                    Log($"Exit code: {result.ExitCode}", ConsoleColor.Yellow);
+                }
+            }
+
+            var average = TimeSpan.FromMilliseconds(totalDuration.TotalMilliseconds / repeat);
+            Log($"Average: {ToDisplayString(average)}", ConsoleColor.Cyan);
+
+            return 0;
+        }
+
+        private static void PrintHelp()
+        {
+            Console.WriteLine(@"Usage: timing [-10] <process> <arguments>
+    Prints the duration of a process invocation.
+    Optionally repeats the command -10 times (or any other number like -42).");
+        }
+
+        public static void Log(string text, ConsoleColor color = ConsoleColor.Gray)
+        {
+            var originalColor = Console.ForegroundColor;
+            if (originalColor != color)
+            {
+                Console.ForegroundColor = color;
+            }
+
+            Console.WriteLine(text);
+
+            if (originalColor != color)
+            {
+                Console.ForegroundColor = originalColor;
+            }
+        }
+
+        public class ProcessRunResult
+        {
+            public TimeSpan Elapsed;
+            public int ExitCode;
+        }
+
+        private static ProcessRunResult RunProcess(string processFilePath, string arguments)
+        {
             var processStartInfo = new ProcessStartInfo(processFilePath, arguments);
             processStartInfo.UseShellExecute = false;
             processStartInfo.CreateNoWindow = false;
@@ -59,9 +133,13 @@ namespace Time
             var process = Process.Start(processStartInfo);
             process.WaitForExit();
 
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(ToDisplayString(stopwatch.Elapsed));
-            Console.ForegroundColor = ConsoleColor.Gray;
+            var result = new ProcessRunResult
+            {
+                Elapsed = stopwatch.Elapsed,
+                ExitCode = process.ExitCode
+            };
+
+            return result;
         }
 
         public static string ToDisplayString(TimeSpan span, bool highPrecision = true)
