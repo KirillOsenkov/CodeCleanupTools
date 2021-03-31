@@ -78,7 +78,15 @@ namespace Time
             {
                 var result = RunProcess(processFilePath, arguments);
                 results.Add(result);
-                Log($"Iteration {i + 1}: {ToDisplayString(result.Elapsed)}", ConsoleColor.Green);
+
+                string output = ToDisplayString(result.Elapsed);
+                if (repeat > 1)
+                {
+                    output = $"Iteration {i + 1}: {output}";
+                }
+
+                Log(output, ConsoleColor.Green);
+
                 totalDuration += result.Elapsed;
                 if (result.ExitCode != 0)
                 {
