@@ -86,8 +86,11 @@ namespace Time
                 }
             }
 
-            var average = TimeSpan.FromMilliseconds(totalDuration.TotalMilliseconds / repeat);
-            Log($"Average: {ToDisplayString(average)}", ConsoleColor.Cyan);
+            if (repeat > 1)
+            {
+                var average = TimeSpan.FromMilliseconds(totalDuration.TotalMilliseconds / repeat);
+                Log($"Average: {ToDisplayString(average)}", ConsoleColor.Cyan);
+            }
 
             return 0;
         }
