@@ -96,6 +96,17 @@ namespace Time
 
             if (repeat > 1)
             {
+                for (int i = 0; i < results.Count; i++)
+                {
+                    Log($"{ToDisplayString(results[i].Elapsed, units: false)}", ConsoleColor.DarkGray, newLine: false);
+                    if (results[i].ExitCode != 0)
+                    {
+                        Log($"\tExit code: {results[i].ExitCode}", ConsoleColor.Yellow, newLine: false);
+                    }
+
+                    Log();
+                }
+
                 var average = TimeSpan.FromMilliseconds(totalDuration.TotalMilliseconds / repeat);
                 Log($"Average: {ToDisplayString(average)}", ConsoleColor.Cyan);
             }
@@ -110,7 +121,7 @@ namespace Time
     Optionally repeats the command -10 times (or any other number like -42).");
         }
 
-        public static void Log(string text, ConsoleColor color = ConsoleColor.Gray)
+        public static void Log(string text = "", ConsoleColor color = ConsoleColor.Gray, bool newLine = true)
         {
             var originalColor = Console.ForegroundColor;
             if (originalColor != color)
@@ -118,7 +129,14 @@ namespace Time
                 Console.ForegroundColor = color;
             }
 
-            Console.WriteLine(text);
+            if (newLine)
+            {
+                Console.WriteLine(text);
+            }
+            else
+            {
+                Console.Write(text);
+            }
 
             if (originalColor != color)
             {
@@ -153,7 +171,7 @@ namespace Time
             return result;
         }
 
-        public static string ToDisplayString(TimeSpan span, bool highPrecision = true)
+        public static string ToDisplayString(TimeSpan span, bool highPrecision = true, bool units = true)
         {
             if (span.TotalMilliseconds < 1)
             {
@@ -184,17 +202,18 @@ namespace Time
 
             if (span.TotalMilliseconds > 1000)
             {
+                string second = units ? " s" : "";
                 if (highPrecision)
                 {
-                    return span.ToString(@"s\.fff") + " s";
+                    return span.ToString(@"s\.fff") + second;
                 }
                 else
                 {
-                    return span.Seconds + " s";
+                    return span.Seconds + second;
                 }
             }
 
-            return span.Milliseconds + " ms";
+            return span.Milliseconds + (units ? " ms" : "");
         }
 
         private static string ResolveFromPath(string processFilePath)
