@@ -6,6 +6,23 @@ A set of command-line tools to cleanup C# and VB source code.
 
 A recommended pattern is that you fork this repo for a codebase and tweak to the guidelines of your codebase. It tries to use reasonable defaults (4 spaces, no tabs, no-BOM, CRLF, etc)
 
+lbi (ListBinaryInfo)
+--------------------
+Like `dir /s`, but for assemblies. Groups assemblies by version, displays assembly names.
+
+```
+Usage: ListBinaryInfo.exe [<pattern>] [/nr]
+        /nr: non-recursive (current directory only). Recursive by default.
+
+  Examples:
+    ListBinaryInfo foo.dll
+    ListBinaryInfo *.exe /nr
+    ListBinaryInfo
+```
+
+https://github.com/KirillOsenkov/CodeCleanupTools/tree/main/ListBinaryInfo
+https://github.com/KirillOsenkov/CodeCleanupTools/releases/tag/lbi-2018-8-31
+
 TextAndWhitespace
 -----------------
 Opens every *.cs file (or other pattern) in the current directory and all subdirectories and:
