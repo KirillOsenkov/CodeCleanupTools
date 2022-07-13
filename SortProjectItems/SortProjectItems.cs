@@ -93,6 +93,30 @@ SortProjectItems.exe /r
             Console.WriteLine("Changed: " + filePath);
             File.WriteAllBytes(filePath, newBytes);
         }
+
+        foreach (XElement itemGroup in processedItemGroups)
+        {
+            foreach (XElement item in itemGroup.Elements())
+            {
+                var include = item.Attribute(XName.Get("Include"))?.Value;
+                if (include == null)
+                {
+                    continue;
+                }
+
+                var path = Path.Combine(Path.GetDirectoryName(filePath), include);
+                var name = Path.GetFileName(path);
+
+                if (string.Equals(".licx", Path.GetExtension(path), StringComparison.OrdinalIgnoreCase))
+                {
+                    SortLicenseFile(path);
+                }
+                else if (string.Equals("packages.config", name, StringComparison.OrdinalIgnoreCase))
+                {
+                    SortPackageConfigFile(path);
+                }
+            }
+        }
     }
 
     private static bool AreEqual(byte[] left, byte[] right)
@@ -245,6 +269,64 @@ SortProjectItems.exe /r
         for (int i = 0; i < original.Length; i++)
         {
             original[i].ReplaceWith(sorted[i]);
+        }
+    }
+
+    private static void SortLicenseFile(string file)
+    {
+        var text = File.ReadAllText(file);
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        var split = text.Split(new[] { (char)13, (char)10 }, StringSplitOptions.RemoveEmptyEntries).ToList();
+        split.Sort(StringComparer.OrdinalIgnoreCase);
+
+        var newText = string.Join(Environment.NewLine, split);
+        if (!string.Equals(text, newText))
+        {
+            Console.WriteLine("Changed: " + file);
+            File.WriteAllText(file, newText);
+        }
+    }
+
+    private static void SortPackageConfigFile(string file)
+    {
+        XDocument document = XDocument.Load(file, LoadOptions.PreserveWhitespace | LoadOptions.SetLineInfo);
+        XNamespace msBuildNamespace = document.Root.GetDefaultNamespace();
+        XName packageName = XName.Get("package", msBuildNamespace.NamespaceName);
+        var packages = document.Root.Elements(packageName).ToArray();
+
+        var original = packages.ToArray();
+        var sorted = original
+            .OrderBy(i => i.Attribute("id")?.Value)
+            .ToArray();
+
+        var changed = false;
+
+        for (var i = 0; i < original.Length; i++)
+        {
+            if (!ReferenceEquals(original[i], sorted[i]))
+            {
+                original[i].ReplaceWith(sorted[i]);
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            Console.WriteLine("Changed: " + file);
+
+            byte[] newBytes;
+            using (var memoryStream = new MemoryStream())
+            using (var textWriter = new StreamWriter(memoryStream, Encoding.UTF8))
+            {
+                document.Save(textWriter, SaveOptions.None);
+                newBytes = memoryStream.ToArray();
+            }
+
+            File.WriteAllBytes(file, newBytes);
         }
     }
 }
