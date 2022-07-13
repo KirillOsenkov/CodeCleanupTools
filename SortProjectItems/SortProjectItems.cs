@@ -90,6 +90,7 @@ SortProjectItems.exe /r
 
         if (!AreEqual(originalBytes, newBytes))
         {
+            Console.WriteLine("Changed: " + filePath);
             File.WriteAllBytes(filePath, newBytes);
         }
     }
