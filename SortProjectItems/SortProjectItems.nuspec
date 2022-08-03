@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>sortprojectitems</id>
+    <version>1.0.4</version>
+    <title>Sort Project Items</title>
+    <authors>Kirill Osenkov</authors>
+    <owners>KirillOsenkov</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</licenseUrl>
+    <projectUrl>http://github.com/kirillosenkov/codecleanuptools</projectUrl>
+    <description>Sorts MSBuild project items in ItemGroup elements of .csproj and .vbproj files to simplify merging project files.</description>
+    <summary>Sorts MSBuild project items in ItemGroup elements of .csproj and .vbproj files to simplify merging project files.</summary>
+    <releaseNotes>Add support for sorting licenses and packages.config files.</releaseNotes>
+    <copyright></copyright>
+    <tags>sortprojectitems MSBuild CSProj Project Cleanup</tags>
+  </metadata>
+  <files>
+    <file src="SortProjectItems.exe" />
+  </files>
+</package>

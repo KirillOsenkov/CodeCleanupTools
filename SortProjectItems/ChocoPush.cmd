@@ -1,0 +1,1 @@
+choco push bin\Debug\net472\sortprojectitems.1.0.4.nupkg --source https://push.chocolatey.org

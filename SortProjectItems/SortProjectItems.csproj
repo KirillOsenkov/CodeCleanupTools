@@ -1,11 +1,36 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFrameworks>net472;net6.0</TargetFrameworks>
     <RuntimeIdentifiers>win10-x64;osx.10.11-x64</RuntimeIdentifiers>
     <OutputType>Exe</OutputType>
     <VersionPrefix>2.0.0</VersionPrefix>
+    <DebugType>embedded</DebugType>
     <Description>Sort Project Items</Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
     <ProjectTags>sortprojectitems MSBuild CSProj Project Cleanup</ProjectTags>
   </PropertyGroup>
+
+  <Target Name="PrepareNupkgInfo" AfterTargets="CoreBuild">
+    <PropertyGroup>
+      <NuspecPath>$(MSBuildProjectDirectory)\SortProjectItems.nuspec</NuspecPath>
+      <NupkgPath>$(OutDir)SortProjectItems.nupkg</NupkgPath>
+      <Version>1.0.4</Version>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CreateNupkg"
+          AfterTargets="Build"
+          Inputs="$(TargetPath);$(NuspecPath);$(MSBuildThisFileFullPath)"
+          Outputs="$(NupkgPath)">
+    <PackTask
+        PackItem="$(NuspecPath)"
+        NuspecFile="$(NuspecPath)"
+        NuspecBasePath="$(OutDir)"
+        NuspecProperties="currentVersion=$(Version)"
+        NuspecOutputPath="$(NuspecOutputPath)"
+        PackageOutputPath="$(OutDir)"
+        RestoreOutputPath="$(RestoreOutputPath)"
+        SymbolPackageFormat="snupkg"
+        />
+  </Target>
 </Project>
