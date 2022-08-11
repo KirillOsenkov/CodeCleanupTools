@@ -1,0 +1,11 @@
+VERIFICATION
+Verification is intended to assist the Chocolatey moderators and community
+in verifying that this package's contents are trustworthy.
+ 
+1. git clone https://github.com/KirillOsenkov/CodeCleanupTools
+2. msbuild /r /m /bl /p:Configuration=Release
+3. sha C:\CodeCleanupTools\SortProjectItems\bin\Release\net472\SortProjectItems.exe
+
+SHA1:   4214bcd3ae19af28b1ab5a4224593674fc4c2075
+SHA256: 2808ac98a067240de61ee268880b6ac57b4a7918e8f18a678ac481f8a7ebf079
+MD5:    bc126d928c6809bd81b526de2b7dfbae

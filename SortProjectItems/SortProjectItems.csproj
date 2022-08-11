@@ -20,9 +20,11 @@
 
   <Target Name="CreateNupkg"
           AfterTargets="Build"
+          Condition="$(TargetFramework) == 'net472'"
           Inputs="$(TargetPath);$(NuspecPath);$(MSBuildThisFileFullPath)"
           Outputs="$(NupkgPath)">
-    <PackTask
+    <Exec Command="choco pack $(NuspecPath)" ContinueOnError="true" />
+    <!--<PackTask
         PackItem="$(NuspecPath)"
         NuspecFile="$(NuspecPath)"
         NuspecBasePath="$(OutDir)"
@@ -31,6 +33,6 @@
         PackageOutputPath="$(OutDir)"
         RestoreOutputPath="$(RestoreOutputPath)"
         SymbolPackageFormat="snupkg"
-        />
+        />-->
   </Target>
 </Project>
