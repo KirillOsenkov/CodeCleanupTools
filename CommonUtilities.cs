@@ -5,12 +5,12 @@ public class Utilities
 {
     public static string SHA1Hash(string filePath)
     {
-        return Hash(filePath, new SHA1Managed());
+        return Hash(filePath, SHA1.Create());
     }
 
     public static string SHA256Hash(string filePath)
     {
-        return Hash(filePath, new SHA256Managed());
+        return Hash(filePath, SHA256.Create());
     }
 
     public static string Hash(string filePath, HashAlgorithm hash)
