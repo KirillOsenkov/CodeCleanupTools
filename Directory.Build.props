@@ -1,9 +1,10 @@
 <Project>
   <PropertyGroup>
     <Authors>Kirill Osenkov</Authors>
-    <PackageProjectUrl>http://github.com/kirillosenkov/codecleanuptools</PackageProjectUrl>
-    <PackageLicenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/KirillOsenkov/CodeCleanupTools</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <RepositoryUrl>https://github.com/KirillOsenkov/CodeCleanupTools</RepositoryUrl>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 </Project>
