@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 #if ShowTargetFramework
 using Mono.Cecil;
@@ -31,26 +32,66 @@ class ListBinaryInfo
     {
         FindCorflagsAndSn();
 
+        var root = Environment.CurrentDirectory;
         string patternList = "*.dll;*.exe";
         bool recursive = true;
+        bool directoryListing = false;
+        string outputFile = null;
 
         var arguments = new HashSet<string>(args, StringComparer.OrdinalIgnoreCase);
-        if (arguments.Contains("/nr"))
+
+        var helpArgument = arguments.FirstOrDefault(a => a == "/?" || a == "-?" || a == "-h" || a == "/h" || a == "-help" || a == "/help");
+        if (helpArgument != null)
         {
-            arguments.Remove("/nr");
+            PrintUsage();
+            return;
+        }
+
+        var nonRecursiveArgument = arguments.FirstOrDefault(a => a == "/nr" || a == "-nr");
+        if (nonRecursiveArgument != null)
+        {
+            arguments.Remove(nonRecursiveArgument);
             recursive = false;
+        }
+
+        var listArgument = arguments.FirstOrDefault(a => a.StartsWith("-l"));
+        if (listArgument != null)
+        {
+            arguments.Remove(listArgument);
+            directoryListing = true;
+            patternList = "*";
+
+            if (listArgument.StartsWith("-l:"))
+            {
+                string output = listArgument.Substring(3);
+                output = output.Trim('"');
+                outputFile = Path.GetFullPath(output);
+            }
+        }
+
+        var directoryArgument = arguments.FirstOrDefault(a => a.StartsWith("-d:"));
+        if (directoryArgument != null)
+        {
+            arguments.Remove(directoryArgument);
+            string path = directoryArgument.Substring(3).Trim('"');
+            path = Path.GetFullPath(path);
+            if (Directory.Exists(path))
+            {
+                root = path;
+            }
+            else
+            {
+                Console.Error.WriteLine($"Directory {path} doesn't exist");
+                return;
+            }
         }
 
         if (arguments.Count > 0)
         {
             if (arguments.Count == 1)
             {
-                patternList = arguments.First();
-                if (patternList == "/?" || patternList == "-h" || patternList == "-help" || patternList == "help")
-                {
-                    PrintUsage();
-                    return;
-                }
+                string firstArgument = arguments.First().Trim('"');
+                patternList = firstArgument;
             }
             else
             {
@@ -66,15 +107,81 @@ class ListBinaryInfo
         }
         else
         {
-            var root = Environment.CurrentDirectory;
             var patterns = patternList.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var pattern in patterns)
+            AddFiles(root, patterns, files, recursive);
+        }
+
+        if (directoryListing)
+        {
+            PrintFiles(root, files, outputFile);
+            return;
+        }
+
+        PrintGroupedFiles(files);
+    }
+
+    private static void AddFiles(string directory, string[] patterns, List<string> list, bool recursive)
+    {
+        if (recursive)
+        {
+            var directories = Directory.GetDirectories(directory);
+            foreach (var subdirectory in directories)
             {
-                files.AddRange(Directory.GetFiles(root, pattern, recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly));
+                AddFiles(subdirectory, patterns, list, recursive);
             }
         }
 
-        foreach (var assemblyNameGroup in files.Select(f => FileInfo.Get(f)).GroupBy(f => f.AssemblyName).OrderBy(g => g.Key))
+        foreach (var pattern in patterns)
+        {
+            var files = Directory.GetFiles(directory, pattern);
+            list.AddRange(files);
+        }
+    }
+
+    private static void PrintFiles(string rootDirectory, List<string> files, string outputFile)
+    {
+        if (!rootDirectory.EndsWith("\\"))
+        {
+            rootDirectory += "\\";
+        }
+
+        var sb = new StringBuilder();
+
+        foreach (var file in files)
+        {
+            string line = file;
+            if (line.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                line = line.Substring(rootDirectory.Length);
+            }
+
+            if (file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            {
+                var assemblyName = GetAssemblyName(file);
+                if (assemblyName?.Version is Version version)
+                {
+                    line += $", {version}";
+                }
+            }
+
+            sb.AppendLine(line);
+        }
+
+        string text = sb.ToString();
+
+        if (!string.IsNullOrEmpty(outputFile))
+        {
+            File.WriteAllText(outputFile, text);
+        }
+        else
+        {
+            Console.WriteLine(text);
+        }
+    }
+
+    private static void PrintGroupedFiles(List<string> files)
+    {
+        foreach (var assemblyNameGroup in files.Select(f => FileInfo.Get(f)).GroupBy(f => f.AssemblyName ?? NotAManagedAssembly).OrderBy(g => g.Key))
         {
             Highlight(assemblyNameGroup.Key, ConsoleColor.Cyan);
             foreach (var shaGroup in assemblyNameGroup.GroupBy(f => f.Sha))
@@ -84,7 +191,7 @@ class ListBinaryInfo
 
                 Highlight(" " + shaGroup.First().FileSize.ToString("N0"), ConsoleColor.Gray, newLineAtEnd: false);
 
-                if (first.AssemblyName != NotAManagedAssembly)
+                if (first.AssemblyName != null)
                 {
                     current = first;
                     CheckSigned(first.FilePath);
@@ -227,7 +334,7 @@ class ListBinaryInfo
             var fileInfo = new FileInfo
             {
                 FilePath = filePath,
-                AssemblyName = GetAssemblyName(filePath),
+                AssemblyName = GetAssemblyNameText(filePath),
                 Sha = Utilities.SHA1Hash(filePath),
                 FileSize = new System.IO.FileInfo(filePath).Length
             };
@@ -240,26 +347,35 @@ class ListBinaryInfo
 
     private static void PrintUsage()
     {
-        Console.WriteLine(@"Usage: ListBinaryInfo.exe [<pattern>] [/nr]
-        /nr: non-recursive (current directory only). Recursive by default.
+        Console.WriteLine(@"Usage: lbi.exe [<pattern>] [-d:<path>] [-l[:<out.txt>]] [-nr]
+        -l:  list full directory contents (optionally output to a file, e.g. out.txt)
+        -d:  specify root directory to start in (defaults to current directory)
+        -nr: non-recursive (current directory only). Recursive by default.
 
   Examples: 
-    ListBinaryInfo foo.dll
-    ListBinaryInfo *.exe /nr
-    ListBinaryInfo");
+    lbi foo.dll
+    lbi *.exe -nr
+    lbi
+    lbi -d:sub\directory -l:out.txt");
     }
 
-    private static string GetAssemblyName(string file)
+    private static AssemblyName GetAssemblyName(string file)
     {
         try
         {
             var name = AssemblyName.GetAssemblyName(file);
-            return name.ToString();
+            return name;
         }
         catch
         {
-            return NotAManagedAssembly;
+            return null;
         }
+    }
+
+    private static string GetAssemblyNameText(string file)
+    {
+        var name = GetAssemblyName(file);
+        return name?.ToString();
     }
 
     private static void CheckPlatform(string file)
