@@ -9,12 +9,12 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>lbi</ToolCommandName>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>lbi</PackageId>
-    <Description>List all the assembly versions and signed flags for all dlls in current directory and all subdirectories.</Description>
+    <Description>List all assembly versions and signed flags for all dlls in current directory and all subdirectories, or print directory contents recursively (to a file).</Description>
 <!--    
     <IconFilePath>$(MSBuildThisFileDirectory)icon.png</IconFilePath>
     <PackageIcon>icon.png</PackageIcon>
