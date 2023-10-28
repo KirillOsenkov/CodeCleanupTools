@@ -32,7 +32,9 @@ class ListBinaryInfo
     {
         FindCorflagsAndSn();
 
-        var root = Environment.CurrentDirectory;
+        List<string> roots = new();
+        List<string> excludeDirectories = new();
+
         string patternList = "*.dll;*.exe";
         bool recursive = true;
         bool directoryListing = false;
@@ -69,20 +71,31 @@ class ListBinaryInfo
             }
         }
 
-        var directoryArgument = arguments.FirstOrDefault(a => a.StartsWith("-d:"));
-        if (directoryArgument != null)
+        while (arguments.FirstOrDefault(a => a.StartsWith("-d:")) is string directoryArgument)
         {
             arguments.Remove(directoryArgument);
             string path = directoryArgument.Substring(3).Trim('"');
             path = Path.GetFullPath(path);
             if (Directory.Exists(path))
             {
-                root = path;
+                roots.Add(path);
             }
             else
             {
-                Console.Error.WriteLine($"Directory {path} doesn't exist");
+                Error($"Directory {path} doesn't exist");
                 return;
+            }
+        }
+
+        while (arguments.FirstOrDefault(a => a.StartsWith("-ed:")) is string directoryArgument)
+        {
+            arguments.Remove(directoryArgument);
+            string path = directoryArgument.Substring(4).Trim('"');
+            path = path.TrimEnd('\\');
+            path = Path.GetFullPath(path);
+            if (Directory.Exists(path))
+            {
+                excludeDirectories.Add(path);
             }
         }
 
@@ -100,6 +113,11 @@ class ListBinaryInfo
             }
         }
 
+        if (roots.Count == 0)
+        {
+            roots.Add(Environment.CurrentDirectory);
+        }
+
         var files = new List<string>();
         if (File.Exists(patternList))
         {
@@ -108,26 +126,62 @@ class ListBinaryInfo
         else
         {
             var patterns = patternList.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-            AddFiles(root, patterns, files, recursive);
+            
+            Func<string, bool> exclude = null;
+            if (excludeDirectories.Count > 0)
+            {
+                var hashset = new HashSet<string>(excludeDirectories, StringComparer.OrdinalIgnoreCase);
+                exclude = hashset.Contains;
+            }
+
+            foreach (var root in roots)
+            {
+                AddFiles(root, patterns, files, recursive, exclude);
+            }
         }
 
         if (directoryListing)
         {
-            PrintFiles(root, files, outputFile);
+            for (int i = 0; i < roots.Count; i++)
+            {
+                var root = roots[i];
+                if (!root.EndsWith("\\"))
+                {
+                    roots[i] = root + "\\";
+                }
+            }
+
+            PrintFiles(roots, files, outputFile);
             return;
         }
 
         PrintGroupedFiles(files);
     }
 
-    private static void AddFiles(string directory, string[] patterns, List<string> list, bool recursive)
+    private static void Error(string text)
     {
+        lock (Console.Error)
+        {
+            var oldColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Error.WriteLine(text);
+            Console.ForegroundColor = oldColor;
+        }
+    }
+
+    private static void AddFiles(string directory, string[] patterns, List<string> list, bool recursive, Func<string, bool> excludeDirectory)
+    {
+        if (excludeDirectory != null && excludeDirectory(directory))
+        {
+            return;
+        }
+
         if (recursive)
         {
             var directories = Directory.GetDirectories(directory);
             foreach (var subdirectory in directories)
             {
-                AddFiles(subdirectory, patterns, list, recursive);
+                AddFiles(subdirectory, patterns, list, recursive, excludeDirectory);
             }
         }
 
@@ -138,22 +192,23 @@ class ListBinaryInfo
         }
     }
 
-    private static void PrintFiles(string rootDirectory, List<string> files, string outputFile)
+    private static void PrintFiles(IList<string> rootDirectories, List<string> files, string outputFile)
     {
-        if (!rootDirectory.EndsWith("\\"))
-        {
-            rootDirectory += "\\";
-        }
-
         var sb = new StringBuilder();
 
         foreach (var file in files)
         {
             string line = file;
-            if (line.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase))
+
+            string rootDirectory = rootDirectories[0];
+            while (!line.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase))
             {
-                line = line.Substring(rootDirectory.Length);
+                rootDirectories.RemoveAt(0);
+                rootDirectory = rootDirectories[0];
+                sb.AppendLine();
             }
+
+            line = line.Substring(rootDirectory.Length);
 
             if (file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             {
@@ -347,16 +402,18 @@ class ListBinaryInfo
 
     private static void PrintUsage()
     {
-        Console.WriteLine(@"Usage: lbi.exe [<pattern>] [-d:<path>] [-l[:<out.txt>]] [-nr]
-        -l:  list full directory contents (optionally output to a file, e.g. out.txt)
-        -d:  specify root directory to start in (defaults to current directory)
-        -nr: non-recursive (current directory only). Recursive by default.
+        Console.WriteLine(@"Usage: lbi.exe [<pattern>] [-d:<path>]* [-ed:<path>]* [-l[:<out.txt>]] [-nr]
+        -l:  List full directory contents (optionally output to a file, e.g. out.txt)
+        -d:  Specify root directory to start in (defaults to current directory).
+             Maybe be specified more than once to scan multiple directories.
+        -ed: Exclude directory from search. May be specified more than once.
+        -nr: Non-recursive (current directory only). Recursive by default.
 
   Examples: 
     lbi foo.dll
     lbi *.exe -nr
     lbi
-    lbi -d:sub\directory -l:out.txt");
+    lbi -d:sub\directory -d:sub\dir2 -ed:sub\dir2\obj -l:out.txt");
     }
 
     private static AssemblyName GetAssemblyName(string file)
