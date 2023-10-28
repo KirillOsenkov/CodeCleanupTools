@@ -15,7 +15,7 @@ class ListBinaryInfo
     private static void PrintUsage()
     {
         Console.WriteLine(@"Usage:
-  lbi.exe [<pattern>] [-l[:<out.txt>]] [-d:<path>]* [-ed:<path>]* [-ef:<substring>]* [-nr]
+  lbi.exe [<pattern>] [-l[:<out.txt>]] [-d:<path>]* [-ed:<path>]* [-ef:<substring>]* [-nr] [@response.rsp]
 
     -l:     List full directory contents (optionally output to a file, e.g. out.txt)
             If not specified, files are grouped by hash, then version.
@@ -24,6 +24,7 @@ class ListBinaryInfo
     -ed:    Exclude directory from search. May be specified more than once.
     -ef:    Exclude files with substring. May be specified more than once.
     -nr:    Non-recursive (current directory only). Recursive by default.
+    @r:     Specify a response file (each file line treated as argument).
 
   Examples: 
     lbi foo.dll
@@ -62,6 +63,25 @@ class ListBinaryInfo
         string outputFile = null;
 
         var arguments = new HashSet<string>(args, StringComparer.OrdinalIgnoreCase);
+
+        while (arguments.FirstOrDefault(a => a.StartsWith("@")) is string responseFile)
+        {
+            arguments.Remove(responseFile);
+            responseFile = responseFile.Substring(1);
+            if (File.Exists(responseFile))
+            {
+                var lines = File.ReadAllLines(responseFile);
+                foreach (var line in lines)
+                {
+                    arguments.Add(line);
+                }
+            }
+            else
+            {
+                Error("Response file doesn't exist: " + responseFile);
+                return;
+            }
+        }
 
         var helpArgument = arguments.FirstOrDefault(a => a == "/?" || a == "-?" || a == "-h" || a == "/h" || a == "-help" || a == "/help");
         if (helpArgument != null)
