@@ -12,6 +12,26 @@ using Mono.Cecil;
 
 class ListBinaryInfo
 {
+    private static void PrintUsage()
+    {
+        Console.WriteLine(@"Usage:
+  lbi.exe [<pattern>] [-l[:<out.txt>]] [-d:<path>]* [-ed:<path>]* [-ef:<substring>]* [-nr]
+
+    -l:     List full directory contents (optionally output to a file, e.g. out.txt)
+            If not specified, files are grouped by hash, then version.
+    -d:     Specify root directory to start in (defaults to current directory).
+            Maybe be specified more than once to scan multiple directories.
+    -ed:    Exclude directory from search. May be specified more than once.
+    -ef:    Exclude files with substring. May be specified more than once.
+    -nr:    Non-recursive (current directory only). Recursive by default.
+
+  Examples: 
+    lbi foo.dll
+    lbi *.exe -nr
+    lbi
+    lbi -d:sub\directory -d:sub\dir2 -ed:sub\dir2\obj -l:out.txt");
+    }
+
     private static string[] netfxToolsPaths =
     {
         @"Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools",
@@ -34,6 +54,7 @@ class ListBinaryInfo
 
         List<string> roots = new();
         List<string> excludeDirectories = new();
+        List<string> excludeFileSubstrings = new();
 
         string patternList = "*.dll;*.exe";
         bool recursive = true;
@@ -99,6 +120,13 @@ class ListBinaryInfo
             }
         }
 
+        while (arguments.FirstOrDefault(a => a.StartsWith("-ef:")) is string excludeFileArgument)
+        {
+            arguments.Remove(excludeFileArgument);
+            string substring = excludeFileArgument.Substring(4).Trim('"');
+            excludeFileSubstrings.Add(substring);
+        }
+
         if (arguments.Count > 0)
         {
             if (arguments.Count == 1)
@@ -136,7 +164,13 @@ class ListBinaryInfo
 
             foreach (var root in roots)
             {
-                AddFiles(root, patterns, files, recursive, exclude);
+                AddFiles(
+                    root,
+                    patterns,
+                    files,
+                    recursive,
+                    exclude,
+                    excludeFileSubstrings);
             }
         }
 
@@ -169,7 +203,13 @@ class ListBinaryInfo
         }
     }
 
-    private static void AddFiles(string directory, string[] patterns, List<string> list, bool recursive, Func<string, bool> excludeDirectory)
+    private static void AddFiles(
+        string directory,
+        string[] patterns,
+        List<string> list,
+        bool recursive,
+        Func<string, bool> excludeDirectory,
+        List<string> excludeFileSubstrings)
     {
         if (excludeDirectory != null && excludeDirectory(directory))
         {
@@ -181,15 +221,43 @@ class ListBinaryInfo
             var directories = Directory.GetDirectories(directory);
             foreach (var subdirectory in directories)
             {
-                AddFiles(subdirectory, patterns, list, recursive, excludeDirectory);
+                AddFiles(subdirectory,
+                    patterns,
+                    list,
+                    recursive,
+                    excludeDirectory,
+                    excludeFileSubstrings);
             }
         }
 
         foreach (var pattern in patterns)
         {
             var files = Directory.GetFiles(directory, pattern);
-            list.AddRange(files);
+            foreach (var file in files)
+            {
+                string name = Path.GetFileName(file);
+
+                if (ShouldExcludeFile(name, excludeFileSubstrings))
+                {
+                    continue;
+                }
+
+                list.Add(file);
+            }
         }
+    }
+
+    private static bool ShouldExcludeFile(string name, List<string> excludeFileSubstrings)
+    {
+        foreach (var substring in excludeFileSubstrings)
+        {
+            if (name.IndexOf(substring, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void PrintFiles(IList<string> rootDirectories, List<string> files, string outputFile)
@@ -399,22 +467,6 @@ class ListBinaryInfo
     }
 
     private static FileInfo current;
-
-    private static void PrintUsage()
-    {
-        Console.WriteLine(@"Usage: lbi.exe [<pattern>] [-d:<path>]* [-ed:<path>]* [-l[:<out.txt>]] [-nr]
-        -l:  List full directory contents (optionally output to a file, e.g. out.txt)
-        -d:  Specify root directory to start in (defaults to current directory).
-             Maybe be specified more than once to scan multiple directories.
-        -ed: Exclude directory from search. May be specified more than once.
-        -nr: Non-recursive (current directory only). Recursive by default.
-
-  Examples: 
-    lbi foo.dll
-    lbi *.exe -nr
-    lbi
-    lbi -d:sub\directory -d:sub\dir2 -ed:sub\dir2\obj -l:out.txt");
-    }
 
     private static AssemblyName GetAssemblyName(string file)
     {
