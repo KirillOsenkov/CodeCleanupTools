@@ -174,7 +174,7 @@ class ListBinaryInfo
         else
         {
             var patterns = patternList.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-            
+
             Func<string, bool> exclude = null;
             if (excludeDirectories.Count > 0)
             {
@@ -238,31 +238,43 @@ class ListBinaryInfo
 
         if (recursive)
         {
-            var directories = Directory.GetDirectories(directory);
-            foreach (var subdirectory in directories)
+            try
             {
-                AddFiles(subdirectory,
-                    patterns,
-                    list,
-                    recursive,
-                    excludeDirectory,
-                    excludeFileSubstrings);
+                var directories = Directory.GetDirectories(directory);
+                foreach (var subdirectory in directories)
+                {
+                    AddFiles(subdirectory,
+                        patterns,
+                        list,
+                        recursive,
+                        excludeDirectory,
+                        excludeFileSubstrings);
+                }
+            }
+            catch
+            {
             }
         }
 
         foreach (var pattern in patterns)
         {
-            var files = Directory.GetFiles(directory, pattern);
-            foreach (var file in files)
+            try
             {
-                string name = Path.GetFileName(file);
-
-                if (ShouldExcludeFile(name, excludeFileSubstrings))
+                var files = Directory.GetFiles(directory, pattern);
+                foreach (var file in files)
                 {
-                    continue;
-                }
+                    string name = Path.GetFileName(file);
 
-                list.Add(file);
+                    if (ShouldExcludeFile(name, excludeFileSubstrings))
+                    {
+                        continue;
+                    }
+
+                    list.Add(file);
+                }
+            }
+            catch
+            {
             }
         }
     }
