@@ -15,7 +15,17 @@ class ListBinaryInfo
     private static void PrintUsage()
     {
         Console.WriteLine(@"Usage:
-lbi.exe [<pattern>] [-l[:<out.txt>]] [-d:<path>]* [-ed:<path>]* [-ef:<substring>]* [-nr] [-sn] [-p] [@response.rsp]
+lbi.exe [<pattern>]
+        [-l[:<out.txt>]]
+        [-d:<path>]*
+        [-ed:<path>]*
+        [-ef:<substring>]*
+        [-nr]
+        [-sn]
+        [-p]
+        [-v]
+        [-tf]
+        [@response.rsp]
 
     -l:     List full directory contents (optionally output to a file, e.g. out.txt)
             If not specified, files are grouped by hash, then version.
@@ -26,6 +36,8 @@ lbi.exe [<pattern>] [-l[:<out.txt>]] [-d:<path>]* [-ed:<path>]* [-ef:<substring>
     -nr:    Non-recursive (current directory only). Recursive by default.
     -sn     Print whether the assembly is signed.
     -p      Print assembly platform.
+    -v      Print assembly version.
+    -tf     Print assembly target framework.
     @r:     Specify a response file (each file line treated as argument).
 
 Examples: 
@@ -52,6 +64,8 @@ Examples:
     private static string snExe;
     private static bool checkSn;
     private static bool checkPlatform;
+    private static bool printVersion;
+    private static bool printTargetFramework;
 
     static void Main(string[] args)
     {
@@ -128,6 +142,20 @@ Examples:
         {
             arguments.Remove(platformArgument);
             checkPlatform = true;
+        }
+
+        var versionArgument = arguments.FirstOrDefault(a => a == "-v");
+        if (versionArgument != null)
+        {
+            arguments.Remove(versionArgument);
+            printVersion = true;
+        }
+
+        var targetFrameworkArgument = arguments.FirstOrDefault(a => a == "-tf");
+        if (targetFrameworkArgument != null)
+        {
+            arguments.Remove(targetFrameworkArgument);
+            printTargetFramework = true;
         }
 
         while (arguments.FirstOrDefault(a => a.StartsWith("-d:")) is string directoryArgument)
@@ -328,12 +356,34 @@ Examples:
 
             line = line.Substring(rootDirectory.Length);
 
-            if (file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            if (file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
+                file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
-                var assemblyName = GetAssemblyName(file);
-                if (assemblyName?.Version is Version version)
+                bool noAssemblyName = false;
+
+                if (printVersion)
                 {
-                    line += $", {version}";
+                    var assemblyName = GetAssemblyName(file);
+                    if (assemblyName != null)
+                    {
+                        if (assemblyName?.Version is Version version)
+                        {
+                            line += $", {version}";
+                        }
+                    }
+                    else
+                    {
+                        noAssemblyName = true;
+                    }
+                }
+
+                if (printTargetFramework && !noAssemblyName)
+                {
+                    var targetFramework = GetTargetFramework(file);
+                    if (!string.IsNullOrEmpty(targetFramework))
+                    {
+                        line += $", {targetFramework}";
+                    }
                 }
             }
 
@@ -393,10 +443,13 @@ Examples:
                     }
 
 #if ShowTargetFramework
-                    var targetFramework = GetTargetFramework(first.FilePath);
-                    if (!string.IsNullOrEmpty(targetFramework))
+                    if (printTargetFramework)
                     {
-                        Highlight(" " + targetFramework, ConsoleColor.Blue, newLineAtEnd: false);
+                        var targetFramework = GetTargetFramework(first.FilePath);
+                        if (!string.IsNullOrEmpty(targetFramework))
+                        {
+                            Highlight(" " + targetFramework, ConsoleColor.Blue, newLineAtEnd: false);
+                        }
                     }
 #endif
                 }
