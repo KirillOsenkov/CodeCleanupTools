@@ -15,7 +15,7 @@ class ListBinaryInfo
     private static void PrintUsage()
     {
         Console.WriteLine(@"Usage:
-  lbi.exe [<pattern>] [-l[:<out.txt>]] [-d:<path>]* [-ed:<path>]* [-ef:<substring>]* [-nr] [@response.rsp]
+lbi.exe [<pattern>] [-l[:<out.txt>]] [-d:<path>]* [-ed:<path>]* [-ef:<substring>]* [-nr] [-sn] [-p] [@response.rsp]
 
     -l:     List full directory contents (optionally output to a file, e.g. out.txt)
             If not specified, files are grouped by hash, then version.
@@ -24,9 +24,11 @@ class ListBinaryInfo
     -ed:    Exclude directory from search. May be specified more than once.
     -ef:    Exclude files with substring. May be specified more than once.
     -nr:    Non-recursive (current directory only). Recursive by default.
+    -sn     Print whether the assembly is signed.
+    -p      Print assembly platform.
     @r:     Specify a response file (each file line treated as argument).
 
-  Examples: 
+Examples: 
     lbi foo.dll
     lbi *.exe -nr
     lbi
@@ -48,6 +50,8 @@ class ListBinaryInfo
 
     private static string corflagsExe;
     private static string snExe;
+    private static bool checkSn;
+    private static bool checkPlatform;
 
     static void Main(string[] args)
     {
@@ -110,6 +114,20 @@ class ListBinaryInfo
                 output = output.Trim('"');
                 outputFile = Path.GetFullPath(output);
             }
+        }
+
+        var signArgument = arguments.FirstOrDefault(a => a == "-sn");
+        if (signArgument != null)
+        {
+            arguments.Remove(signArgument);
+            checkSn = true;
+        }
+
+        var platformArgument = arguments.FirstOrDefault(a => a == "-p");
+        if (platformArgument != null)
+        {
+            arguments.Remove(platformArgument);
+            checkPlatform = true;
         }
 
         while (arguments.FirstOrDefault(a => a.StartsWith("-d:")) is string directoryArgument)
@@ -342,7 +360,7 @@ class ListBinaryInfo
             foreach (var shaGroup in assemblyNameGroup.GroupBy(f => f.Sha))
             {
                 var first = shaGroup.First();
-                Highlight("    SHA: " + shaGroup.Key, ConsoleColor.DarkGray, newLineAtEnd: false);
+                Highlight("    SHA1: " + shaGroup.Key, ConsoleColor.DarkGray, newLineAtEnd: false);
 
                 Highlight(" " + shaGroup.First().FileSize.ToString("N0"), ConsoleColor.Gray, newLineAtEnd: false);
 
@@ -521,7 +539,7 @@ class ListBinaryInfo
 
     private static void CheckPlatform(string file)
     {
-        if (!File.Exists(corflagsExe))
+        if (!checkPlatform || corflagsExe == null)
         {
             return;
         }
@@ -532,7 +550,7 @@ class ListBinaryInfo
 
     private static void CheckSigned(string file)
     {
-        if (!File.Exists(snExe))
+        if (!checkSn || snExe == null)
         {
             return;
         }
