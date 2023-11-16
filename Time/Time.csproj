@@ -1,10 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <AssemblyName>timing</AssemblyName>
     <TargetFramework>net6.0</TargetFramework>
-    <RuntimeIdentifiers>win10-x64;osx.10.11-x64</RuntimeIdentifiers>
     <OutputType>Exe</OutputType>
-    <VersionPrefix>2.0.0</VersionPrefix>
+    <LangVersion>latest</LangVersion>
     <DebugType>embedded</DebugType>
+    <RollForward>major</RollForward>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>timing</ToolCommandName>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>timing</PackageId>
+    <Description>Prints how long a process takes</Description>
+<!--    
+    <IconFilePath>$(MSBuildThisFileDirectory)icon.png</IconFilePath>
+    <PackageIcon>icon.png</PackageIcon>
+-->
+    <PackageTags>.NET dotnet time timing tool process run execute</PackageTags>
+  </PropertyGroup>
+
 </Project>
