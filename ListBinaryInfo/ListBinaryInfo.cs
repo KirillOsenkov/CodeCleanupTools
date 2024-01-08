@@ -215,7 +215,9 @@ Examples:
         var files = new List<string>();
         if (File.Exists(patternList))
         {
-            files.Add(Path.GetFullPath(patternList));
+            var file = Path.GetFullPath(patternList);
+            files.Add(file);
+            roots.Clear();
         }
         else
         {
@@ -346,15 +348,31 @@ Examples:
         {
             string line = file;
 
-            string rootDirectory = rootDirectories[0];
-            while (!line.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase))
+            // make the path relative to the current root directory, if we have any root directories
+            if (rootDirectories != null && rootDirectories.Count > 0)
             {
-                rootDirectories.RemoveAt(0);
-                rootDirectory = rootDirectories[0];
-                sb.AppendLine();
-            }
+                string rootDirectory = rootDirectories[0];
+                while (!line.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase))
+                {
+                    rootDirectories.RemoveAt(0);
 
-            line = line.Substring(rootDirectory.Length);
+                    if (rootDirectories.Count > 0)
+                    {
+                        rootDirectory = rootDirectories[0];
+                        sb.AppendLine();
+                    }
+                    else
+                    {
+                        rootDirectories = null;
+                        rootDirectory = null;
+                    }
+                }
+
+                if (rootDirectory != null)
+                {
+                    line = line.Substring(rootDirectory.Length);
+                }
+            }
 
             if (file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
                 file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
@@ -398,7 +416,7 @@ Examples:
         }
         else
         {
-            Console.WriteLine(text);
+            Console.Write(text);
         }
     }
 
