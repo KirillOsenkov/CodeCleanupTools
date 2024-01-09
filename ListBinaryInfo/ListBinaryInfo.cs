@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -31,10 +30,14 @@ lbi.exe [<pattern>]
     -ed:    Exclude directory from search. May be specified more than once.
     -ef:    Exclude files with substring. May be specified more than once.
     -nr:    Non-recursive (current directory only). Recursive by default.
+
     -sn     Print whether the assembly is signed.
     -p      Print assembly platform.
     -v      Print assembly version.
+    -fv     Print assembly file version.
+    -iv     Print assembly informational version.
     -tf     Print assembly target framework.
+
     @r:     Specify a response file (each file line treated as argument).
 
 Examples: 
@@ -275,17 +278,6 @@ Examples:
         PrintGroupedFiles(files);
     }
 
-    private static void Error(string text)
-    {
-        lock (Console.Error)
-        {
-            var oldColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.Error.WriteLine(text);
-            Console.ForegroundColor = oldColor;
-        }
-    }
-
     private static void AddFiles(
         string directory,
         string[] patterns,
@@ -392,7 +384,7 @@ Examples:
             if (file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
                 file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
-                bool noAssemblyName = false;
+                bool isManagedAssembly = true;
 
                 if (printVersion)
                 {
@@ -406,25 +398,42 @@ Examples:
                     }
                     else
                     {
-                        noAssemblyName = true;
+                        isManagedAssembly = false;
                     }
                 }
 
-                var fileInfo = FileInfo.Get(file, ShouldReadModule && !noAssemblyName);
-
-                if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
+                if (isManagedAssembly)
                 {
-                    line += $", {fileInfo.FileVersion}";
-                }
+                    var fileInfo = FileInfo.Get(file, ShouldReadModule);
 
-                if (printTargetFramework && !string.IsNullOrWhiteSpace(fileInfo.TargetFramework))
-                {
-                    line += $", {fileInfo.TargetFramework}";
-                }
+                    RunSnAndCorflags(fileInfo);
 
-                if (printInformationalVersion && !string.IsNullOrWhiteSpace(fileInfo.InformationalVersion))
-                {
-                    line += $", {fileInfo.InformationalVersion}";
+                    string signedText = fileInfo.SignedText;
+                    if (!string.IsNullOrWhiteSpace(signedText))
+                    {
+                        line += $", {signedText}";
+                    }
+
+                    string platformText = fileInfo.PlatformText;
+                    if (!string.IsNullOrWhiteSpace(platformText))
+                    {
+                        line += $", {platformText}";
+                    }
+
+                    if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
+                    {
+                        line += $", {fileInfo.FileVersion}";
+                    }
+
+                    if (printTargetFramework && !string.IsNullOrWhiteSpace(fileInfo.TargetFramework))
+                    {
+                        line += $", {fileInfo.TargetFramework}";
+                    }
+
+                    if (printInformationalVersion && !string.IsNullOrWhiteSpace(fileInfo.InformationalVersion))
+                    {
+                        line += $", {fileInfo.InformationalVersion}";
+                    }
                 }
             }
 
@@ -457,27 +466,15 @@ Examples:
 
                 if (fileInfo.AssemblyName != null)
                 {
-                    current = fileInfo;
-                    CheckSigned(fileInfo.FilePath);
-                    CheckPlatform(fileInfo.FilePath);
+                    RunSnAndCorflags(fileInfo);
 
-                    var signedText = fileInfo.FullSigned;
-                    if (fileInfo.Signed != "Signed" && fileInfo.Signed != null)
-                    {
-                        signedText += "(" + fileInfo.Signed + ")";
-                    }
-
+                    var signedText = fileInfo.SignedText;
                     if (!string.IsNullOrEmpty(signedText))
                     {
                         Highlight($" {signedText}", ConsoleColor.DarkGray, newLineAtEnd: false);
                     }
 
-                    var platformText = fileInfo.Architecture;
-                    if (fileInfo.Platform != "32BITPREF : 0" && fileInfo.Platform != null)
-                    {
-                        platformText += "(" + fileInfo.Platform + ")";
-                    }
-
+                    var platformText = fileInfo.PlatformText;
                     if (!string.IsNullOrEmpty(platformText))
                     {
                         Highlight(" " + platformText, ConsoleColor.Gray, newLineAtEnd: false);
@@ -622,6 +619,34 @@ Examples:
         public string InformationalVersion { get; set; }
         public long FileSize { get; set; }
 
+        public string SignedText
+        {
+            get
+            {
+                var signedText = FullSigned;
+                if (Signed != "Signed" && Signed != null)
+                {
+                    signedText += "(" + Signed + ")";
+                }
+
+                return signedText;
+            }
+        }
+
+        public string PlatformText
+        {
+            get
+            {
+                var platformText = Architecture;
+                if (Platform != "32BITPREF : 0" && Platform != null)
+                {
+                    platformText += "(" + Platform + ")";
+                }
+
+                return platformText;
+            }
+        }
+
         public static FileInfo Get(string filePath, bool readModule = false)
         {
             var fileInfo = new FileInfo
@@ -640,8 +665,6 @@ Examples:
             return fileInfo;
         }
     }
-
-    private static FileInfo current;
 
     private static AssemblyName GetAssemblyName(string file)
     {
@@ -662,73 +685,58 @@ Examples:
         return name?.ToString();
     }
 
-    private static void CheckPlatform(string file)
+    private static void RunSnAndCorflags(FileInfo fileInfo)
+    {
+        CheckPlatform(fileInfo);
+        CheckSigned(fileInfo);
+    }
+
+    private static void CheckPlatform(FileInfo fileInfo)
     {
         if (!checkPlatform || corflagsExe == null)
         {
             return;
         }
 
-        file = QuoteIfNecessary(file);
-        StartProcess(corflagsExe, "/nologo " + file);
+        StartProcess(corflagsExe, "/nologo " + fileInfo.FilePath, fileInfo);
     }
 
-    private static void CheckSigned(string file)
+    private static void CheckSigned(FileInfo fileInfo)
     {
         if (!checkSn || snExe == null)
         {
             return;
         }
 
-        file = QuoteIfNecessary(file);
-        StartProcess(snExe, "-vf " + file);
+        StartProcess(snExe, "-vf " + fileInfo.FilePath, fileInfo);
     }
 
-    private static void StartProcess(string executableFilePath, string arguments)
+    private static void StartProcess(string executableFilePath, string arguments, FileInfo fileInfo)
     {
         if (!File.Exists(executableFilePath))
         {
             return;
         }
 
-        executableFilePath = QuoteIfNecessary(executableFilePath);
-
-        var psi = new ProcessStartInfo(executableFilePath, arguments);
-        psi.CreateNoWindow = true;
-        psi.UseShellExecute = false;
-        psi.RedirectStandardOutput = true;
-        psi.RedirectStandardError = true;
-
-        var process = Process.Start(psi);
-        process.OutputDataReceived += Process_DataReceived;
-        process.ErrorDataReceived += Process_DataReceived;
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        process.WaitForExit();
-    }
-
-    private static string QuoteIfNecessary(string filePath)
-    {
-        if (filePath.Contains(' '))
+        var processResult = ProcessRunner.Run(executableFilePath, arguments);
+        var text = processResult.Output;
+        var lines = text.GetLines();
+        foreach (var line in lines)
         {
-            filePath = "\"" + filePath + "\"";
+            ProcessLine(fileInfo, line);
         }
-
-        return filePath;
     }
 
-    private static void Process_DataReceived(object sender, DataReceivedEventArgs e)
+    private static void ProcessLine(FileInfo fileInfo, string text)
     {
-        if (e == null || string.IsNullOrEmpty(e.Data))
+        if (string.IsNullOrEmpty(text))
         {
             return;
         }
 
-        string text = e.Data;
-
         if (text.Contains("32BITPREF"))
         {
-            current.Platform = text;
+            fileInfo.Platform = text;
             return;
         }
 
@@ -747,65 +755,79 @@ Examples:
 
         if (text.Contains("The specified file does not have a valid managed header"))
         {
-            current.AssemblyName = "Native";
+            fileInfo.AssemblyName = "Native";
             return;
         }
 
         if (text.Contains("is valid"))
         {
-            current.FullSigned = "Full-signed";
+            fileInfo.FullSigned = "Full-signed";
             return;
         }
 
         if (text.Contains("is a delay-signed or test-signed"))
         {
-            current.FullSigned = "Delay-signed or test-signed";
+            fileInfo.FullSigned = "Delay-signed or test-signed";
             return;
         }
 
         if (text.Contains("32BITREQ  : 1"))
         {
-            current.Architecture = "x86";
+            fileInfo.Architecture = "x86";
             return;
         }
 
         if (text.Contains("32BITREQ  : 0"))
         {
-            current.Architecture = "Any CPU";
+            fileInfo.Architecture = "Any CPU";
             return;
         }
 
         if (text.Contains("Signed    : 1"))
         {
-            current.Signed = "Signed";
+            fileInfo.Signed = "Signed";
             return;
         }
 
         if (text.Contains("Signed    : 0"))
         {
-            current.Signed = "Unsigned";
+            fileInfo.Signed = "Unsigned";
             return;
         }
 
         if (text.Contains("Failed to verify assembly -- Strong name validation failed."))
         {
-            current.FullSigned = "Strong name validation failed";
+            fileInfo.FullSigned = "Strong name validation failed";
             return;
         }
 
         Console.WriteLine(text);
     }
 
-    private static void Highlight(string message, ConsoleColor color = ConsoleColor.Cyan, bool newLineAtEnd = true)
+    private static void Error(string text)
     {
-        var oldColor = Console.ForegroundColor;
-        Console.ForegroundColor = color;
-        Console.Write(message);
-        if (newLineAtEnd)
-        {
-            Console.WriteLine();
-        }
+        Highlight(text, ConsoleColor.Red, writer: Console.Error);
+    }
 
-        Console.ForegroundColor = oldColor;
+    private static void Highlight(
+        string message,
+        ConsoleColor color = ConsoleColor.Cyan,
+        bool newLineAtEnd = true,
+        TextWriter writer = null)
+    {
+        writer ??= Console.Out;
+
+        lock (typeof(Console))
+        {
+            var oldColor = Console.ForegroundColor;
+            Console.ForegroundColor = color;
+            writer.Write(message);
+            if (newLineAtEnd)
+            {
+                writer.WriteLine();
+            }
+
+            Console.ForegroundColor = oldColor;
+        }
     }
 }
