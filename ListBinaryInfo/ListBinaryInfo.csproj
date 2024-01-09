@@ -6,7 +6,6 @@
     <AssemblyName>lbi</AssemblyName>
     <LangVersion>latest</LangVersion>
     <DebugType>embedded</DebugType>
-    <ShowTargetFramework>true</ShowTargetFramework>
     <RollForward>major</RollForward>
   </PropertyGroup>
 
@@ -24,11 +23,7 @@
     <PackageTags>.NET dotnet assembly version signed list tool</PackageTags>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(ShowTargetFramework) == true">
-    <DefineConstants>$(DefineConstants);ShowTargetFramework</DefineConstants>
-  </PropertyGroup>
-
-  <ItemGroup Condition="$(ShowTargetFramework) == true">
+  <ItemGroup>
     <PackageReference Include="Mono.Cecil" Version="0.11.5" />
   </ItemGroup>
 

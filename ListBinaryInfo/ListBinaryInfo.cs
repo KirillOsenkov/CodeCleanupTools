@@ -5,10 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-
-#if ShowTargetFramework
 using Mono.Cecil;
-#endif
 
 class ListBinaryInfo
 {
@@ -65,7 +62,11 @@ Examples:
     private static bool checkSn;
     private static bool checkPlatform;
     private static bool printVersion;
+    private static bool printFileVersion;
+    private static bool printInformationalVersion;
     private static bool printTargetFramework;
+
+    private static bool ShouldReadModule => printFileVersion || printInformationalVersion || printTargetFramework;
 
     static void Main(string[] args)
     {
@@ -149,6 +150,20 @@ Examples:
         {
             arguments.Remove(versionArgument);
             printVersion = true;
+        }
+
+        var fileVersionArgument = arguments.FirstOrDefault(a => a == "-fv");
+        if (fileVersionArgument != null)
+        {
+            arguments.Remove(fileVersionArgument);
+            printFileVersion = true;
+        }
+
+        var informationalVersionArgument = arguments.FirstOrDefault(a => a == "-iv");
+        if (informationalVersionArgument != null)
+        {
+            arguments.Remove(informationalVersionArgument);
+            printInformationalVersion = true;
         }
 
         var targetFrameworkArgument = arguments.FirstOrDefault(a => a == "-tf");
@@ -395,13 +410,21 @@ Examples:
                     }
                 }
 
-                if (printTargetFramework && !noAssemblyName)
+                var fileInfo = FileInfo.Get(file, ShouldReadModule && !noAssemblyName);
+
+                if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
                 {
-                    var targetFramework = GetTargetFramework(file);
-                    if (!string.IsNullOrEmpty(targetFramework))
-                    {
-                        line += $", {targetFramework}";
-                    }
+                    line += $", {fileInfo.FileVersion}";
+                }
+
+                if (printTargetFramework && !string.IsNullOrWhiteSpace(fileInfo.TargetFramework))
+                {
+                    line += $", {fileInfo.TargetFramework}";
+                }
+
+                if (printInformationalVersion && !string.IsNullOrWhiteSpace(fileInfo.InformationalVersion))
+                {
+                    line += $", {fileInfo.InformationalVersion}";
                 }
             }
 
@@ -422,26 +445,26 @@ Examples:
 
     private static void PrintGroupedFiles(List<string> files)
     {
-        foreach (var assemblyNameGroup in files.Select(f => FileInfo.Get(f)).GroupBy(f => f.AssemblyName ?? NotAManagedAssembly).OrderBy(g => g.Key))
+        foreach (var assemblyNameGroup in files.Select(f => FileInfo.Get(f, ShouldReadModule)).GroupBy(f => f.AssemblyName ?? NotAManagedAssembly).OrderBy(g => g.Key))
         {
             Highlight(assemblyNameGroup.Key, ConsoleColor.Cyan);
             foreach (var shaGroup in assemblyNameGroup.GroupBy(f => f.Sha))
             {
-                var first = shaGroup.First();
+                var fileInfo = shaGroup.First();
                 Highlight("    SHA1: " + shaGroup.Key, ConsoleColor.DarkGray, newLineAtEnd: false);
 
                 Highlight(" " + shaGroup.First().FileSize.ToString("N0"), ConsoleColor.Gray, newLineAtEnd: false);
 
-                if (first.AssemblyName != null)
+                if (fileInfo.AssemblyName != null)
                 {
-                    current = first;
-                    CheckSigned(first.FilePath);
-                    CheckPlatform(first.FilePath);
+                    current = fileInfo;
+                    CheckSigned(fileInfo.FilePath);
+                    CheckPlatform(fileInfo.FilePath);
 
-                    var signedText = first.FullSigned;
-                    if (first.Signed != "Signed" && first.Signed != null)
+                    var signedText = fileInfo.FullSigned;
+                    if (fileInfo.Signed != "Signed" && fileInfo.Signed != null)
                     {
-                        signedText += "(" + first.Signed + ")";
+                        signedText += "(" + fileInfo.Signed + ")";
                     }
 
                     if (!string.IsNullOrEmpty(signedText))
@@ -449,10 +472,10 @@ Examples:
                         Highlight($" {signedText}", ConsoleColor.DarkGray, newLineAtEnd: false);
                     }
 
-                    var platformText = first.Architecture;
-                    if (first.Platform != "32BITPREF : 0" && first.Platform != null)
+                    var platformText = fileInfo.Architecture;
+                    if (fileInfo.Platform != "32BITPREF : 0" && fileInfo.Platform != null)
                     {
-                        platformText += "(" + first.Platform + ")";
+                        platformText += "(" + fileInfo.Platform + ")";
                     }
 
                     if (!string.IsNullOrEmpty(platformText))
@@ -460,16 +483,20 @@ Examples:
                         Highlight(" " + platformText, ConsoleColor.Gray, newLineAtEnd: false);
                     }
 
-#if ShowTargetFramework
-                    if (printTargetFramework)
+                    if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
                     {
-                        var targetFramework = GetTargetFramework(first.FilePath);
-                        if (!string.IsNullOrEmpty(targetFramework))
-                        {
-                            Highlight(" " + targetFramework, ConsoleColor.Blue, newLineAtEnd: false);
-                        }
+                        Highlight(" " + fileInfo.FileVersion, ConsoleColor.DarkYellow, newLineAtEnd: false);
                     }
-#endif
+
+                    if (printTargetFramework && !string.IsNullOrWhiteSpace(fileInfo.TargetFramework))
+                    {
+                        Highlight(" " + fileInfo.TargetFramework, ConsoleColor.Blue, newLineAtEnd: false);
+                    }
+
+                    if (printInformationalVersion && !string.IsNullOrWhiteSpace(fileInfo.InformationalVersion))
+                    {
+                        Highlight(" " + fileInfo.InformationalVersion, ConsoleColor.DarkGreen, newLineAtEnd: false);
+                    }
                 }
 
                 Console.WriteLine();
@@ -482,28 +509,47 @@ Examples:
         }
     }
 
-#if ShowTargetFramework
-    private static string GetTargetFramework(string filePath)
+    public static void ReadModuleInfo(FileInfo fileInfo)
     {
         try
         {
+            string filePath = fileInfo.FilePath;
+
             using (var module = ModuleDefinition.ReadModule(filePath))
             {
-                var targetFrameworkAttribute = module.GetCustomAttributes().FirstOrDefault(a => a.AttributeType.FullName == "System.Runtime.Versioning.TargetFrameworkAttribute");
+                var customAttributes = module.GetCustomAttributes().ToArray();
+
+                var targetFrameworkAttribute = customAttributes.FirstOrDefault(a => a.AttributeType.FullName == "System.Runtime.Versioning.TargetFrameworkAttribute");
                 if (targetFrameworkAttribute != null)
                 {
                     var value = targetFrameworkAttribute.ConstructorArguments[0].Value;
-                    return ShortenTargetFramework(value.ToString());
+                    string targetFramework = ShortenTargetFramework(value.ToString());
+                    fileInfo.TargetFramework = targetFramework;
+                }
+
+                var assemblyFileVersion = customAttributes.FirstOrDefault(a => a.AttributeType.FullName ==
+                    "System.Reflection.AssemblyFileVersionAttribute");
+                if (assemblyFileVersion != null)
+                {
+                    var value = assemblyFileVersion.ConstructorArguments[0].Value;
+                    string fileVersion = value.ToString();
+                    fileInfo.FileVersion = fileVersion;
+                }
+
+                var assemblyInformationalVersion = customAttributes.FirstOrDefault(a => a.AttributeType.FullName ==
+                    "System.Reflection.AssemblyInformationalVersionAttribute");
+                if (assemblyInformationalVersion != null)
+                {
+                    var value = assemblyInformationalVersion.ConstructorArguments[0].Value;
+                    string informationalVersion = value.ToString();
+                    fileInfo.InformationalVersion = informationalVersion;
                 }
             }
         }
         catch
         {
         }
-
-        return null;
     }
-#endif
 
     private static readonly Dictionary<string, string> targetFrameworkNames = new Dictionary<string, string>()
     {
@@ -569,11 +615,14 @@ Examples:
         public string AssemblyName { get; set; }
         public string FullSigned { get; set; }
         public string Platform { get; set; }
+        public string TargetFramework { get; set; }
         public string Architecture { get; set; }
         public string Signed { get; set; }
+        public string FileVersion { get; set; }
+        public string InformationalVersion { get; set; }
         public long FileSize { get; set; }
 
-        public static FileInfo Get(string filePath)
+        public static FileInfo Get(string filePath, bool readModule = false)
         {
             var fileInfo = new FileInfo
             {
@@ -582,6 +631,11 @@ Examples:
                 Sha = Utilities.SHA1Hash(filePath),
                 FileSize = new System.IO.FileInfo(filePath).Length
             };
+
+            if (readModule && fileInfo.AssemblyName != null)
+            {
+                ReadModuleInfo(fileInfo);
+            }
 
             return fileInfo;
         }
