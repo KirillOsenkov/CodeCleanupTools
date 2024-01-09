@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>lbi</ToolCommandName>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
