@@ -700,7 +700,7 @@ Examples:
             return;
         }
 
-        StartProcess(corflagsExe, "/nologo " + fileInfo.FilePath, fileInfo);
+        StartProcess(corflagsExe, "/nologo " + fileInfo.FilePath.QuoteIfNeeded(), fileInfo);
     }
 
     private static void CheckSigned(FileInfo fileInfo)
@@ -710,7 +710,7 @@ Examples:
             return;
         }
 
-        StartProcess(snExe, "-vf " + fileInfo.FilePath, fileInfo);
+        StartProcess(snExe, "-vf " + fileInfo.FilePath.QuoteIfNeeded(), fileInfo);
     }
 
     private static void StartProcess(string executableFilePath, string arguments, FileInfo fileInfo)

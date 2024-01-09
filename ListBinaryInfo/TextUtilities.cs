@@ -172,4 +172,24 @@ public static class TextUtilities
             spanCollector(new Span(currentPosition, 0), LineEndingKind.None);
         }
     }
+
+    public static string QuoteIfNeeded(this string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath))
+        {
+            return filePath;
+        }
+
+        if (filePath.StartsWith("\"") && filePath.EndsWith("\""))
+        {
+            return filePath;
+        }
+
+        if (filePath.Contains(' '))
+        {
+            filePath = "\"" + filePath + "\"";
+        }
+
+        return filePath;
+    }
 }

@@ -52,7 +52,7 @@ public class ProcessRunner
 
     private static ProcessStartInfo CreateProcessStartInfo(string filePath, string arguments = null, string workingDirectory = null)
     {
-        filePath = QuoteIfNecessary(filePath);
+        filePath = filePath.QuoteIfNeeded();
 
         var processStartInfo = new ProcessStartInfo
         {
@@ -69,15 +69,5 @@ public class ProcessRunner
         }
 
         return processStartInfo;
-    }
-
-    private static string QuoteIfNecessary(string filePath)
-    {
-        if (filePath.Contains(' '))
-        {
-            filePath = "\"" + filePath + "\"";
-        }
-
-        return filePath;
     }
 }
