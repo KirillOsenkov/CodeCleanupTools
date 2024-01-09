@@ -20,6 +20,8 @@ lbi.exe [<pattern>]
         [-sn]
         [-p]
         [-v]
+        [-fv]
+        [-iv]
         [-tf]
         [@response.rsp]
 

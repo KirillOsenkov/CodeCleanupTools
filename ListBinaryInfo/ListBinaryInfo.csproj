@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>lbi</ToolCommandName>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -21,10 +21,15 @@
     <PackageIcon>icon.png</PackageIcon>
 -->
     <PackageTags>.NET dotnet assembly version signed list tool</PackageTags>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Mono.Cecil" Version="0.11.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="readme.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
