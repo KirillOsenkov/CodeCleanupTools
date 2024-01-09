@@ -477,7 +477,7 @@ Examples:
                     var platformText = fileInfo.PlatformText;
                     if (!string.IsNullOrEmpty(platformText))
                     {
-                        Highlight(" " + platformText, ConsoleColor.Gray, newLineAtEnd: false);
+                        Highlight(" " + platformText, ConsoleColor.DarkMagenta, newLineAtEnd: false);
                     }
 
                     if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
