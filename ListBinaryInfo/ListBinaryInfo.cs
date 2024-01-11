@@ -292,9 +292,9 @@ Examples:
             for (int i = 0; i < roots.Count; i++)
             {
                 var root = roots[i];
-                if (!root.EndsWith("\\"))
+                if (!root.EndsWith(Path.DirectorySeparatorChar))
                 {
-                    roots[i] = root + "\\";
+                    roots[i] = root + Path.DirectorySeparatorChar;
                 }
             }
 
@@ -482,7 +482,7 @@ Examples:
         if (rootDirectories != null && rootDirectories.Count > 0)
         {
             string rootDirectory = rootDirectories[0];
-            while (!relativePath.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase))
+            while (rootDirectory != null && !relativePath.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase))
             {
                 rootDirectories.RemoveAt(0);
 
