@@ -235,7 +235,19 @@ Examples:
             }
         }
 
-        if (roots.Count == 0)
+        if (Directory.Exists(patternList))
+        {
+            roots.Add(Path.GetFullPath(patternList));
+            if (directoryListing)
+            {
+                patternList = "*";
+            }
+            else
+            {
+                patternList = "*.dll;*.exe";
+            }
+        }
+        else if (roots.Count == 0)
         {
             roots.Add(Environment.CurrentDirectory);
         }
