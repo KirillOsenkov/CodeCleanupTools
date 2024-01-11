@@ -17,6 +17,7 @@ lbi.exe [<pattern>]
         [-ed:<path>]*
         [-ef:<substring>]*
         [-nr]
+        [-mo]
         [-sn]
         [-p]
         [-v]
@@ -32,6 +33,7 @@ lbi.exe [<pattern>]
     -ed:    Exclude directory from search. May be specified more than once.
     -ef:    Exclude files with substring. May be specified more than once.
     -nr:    Non-recursive (current directory only). Recursive by default.
+    -mo     Managed assemblies only.
 
     -sn     Print whether the assembly is signed.
     -p      Print assembly platform.
@@ -70,6 +72,7 @@ Examples:
     private static bool printFileVersion;
     private static bool printInformationalVersion;
     private static bool printTargetFramework;
+    private static bool managedOnly = false;
 
     static void Main(string[] args)
     {
@@ -115,6 +118,13 @@ Examples:
         {
             arguments.Remove(nonRecursiveArgument);
             recursive = false;
+        }
+
+        var managedOnlyArgument = arguments.FirstOrDefault(a => a == "-mo" || a == "/mo");
+        if (managedOnlyArgument != null)
+        {
+            arguments.Remove(managedOnlyArgument);
+            managedOnly = true;
         }
 
         var listArgument = arguments.FirstOrDefault(a => a.StartsWith("-l"));
@@ -234,7 +244,11 @@ Examples:
         if (File.Exists(patternList))
         {
             var file = Path.GetFullPath(patternList);
-            files.Add(file);
+            if (!managedOnly || FileInfo.GetIsManagedAssembly(file))
+            {
+                files.Add(file);
+            }
+
             roots.Clear();
         }
         else
@@ -255,6 +269,7 @@ Examples:
                     patterns,
                     files,
                     recursive,
+                    managedOnly,
                     exclude,
                     excludeFileSubstrings);
             }
@@ -283,6 +298,7 @@ Examples:
         string[] patterns,
         List<string> list,
         bool recursive,
+        bool managedOnly,
         Func<string, bool> excludeDirectory,
         List<string> excludeFileSubstrings)
     {
@@ -302,6 +318,7 @@ Examples:
                         patterns,
                         list,
                         recursive,
+                        managedOnly,
                         excludeDirectory,
                         excludeFileSubstrings);
                 }
@@ -321,6 +338,11 @@ Examples:
                     string name = Path.GetFileName(file);
 
                     if (ShouldExcludeFile(name, excludeFileSubstrings))
+                    {
+                        continue;
+                    }
+
+                    if (managedOnly && !FileInfo.GetIsManagedAssembly(file))
                     {
                         continue;
                     }
@@ -381,63 +403,49 @@ Examples:
                 }
             }
 
-            if (file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
-                file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-            {
-                bool isManagedAssembly = true;
+            var fileInfo = FileInfo.Get(file, isConfirmedManagedAssembly: managedOnly);
 
+            if (fileInfo.IsManagedAssembly)
+            {
                 if (printVersion)
                 {
-                    var assemblyName = GetAssemblyName(file);
-                    if (assemblyName != null)
+                    if (fileInfo.Version is string version)
                     {
-                        if (assemblyName?.Version is Version version)
-                        {
-                            line += $", {version}";
-                        }
-                    }
-                    else
-                    {
-                        isManagedAssembly = false;
+                        line += $", {version}";
                     }
                 }
 
-                if (isManagedAssembly)
+                if (printTargetFramework && !string.IsNullOrWhiteSpace(fileInfo.TargetFramework))
                 {
-                    var fileInfo = FileInfo.Get(file);
+                    line += $", {fileInfo.TargetFramework}";
+                }
 
-                    if (checkSn)
+                if (checkSn)
+                {
+                    string signedText = fileInfo.SignedText;
+                    if (!string.IsNullOrWhiteSpace(signedText))
                     {
-                        string signedText = fileInfo.SignedText;
-                        if (!string.IsNullOrWhiteSpace(signedText))
-                        {
-                            line += $", {signedText}";
-                        }
+                        line += $", {signedText}";
                     }
+                }
 
-                    if (checkPlatform)
+                if (checkPlatform)
+                {
+                    string platformText = fileInfo.PlatformText;
+                    if (!string.IsNullOrWhiteSpace(platformText))
                     {
-                        string platformText = fileInfo.PlatformText;
-                        if (!string.IsNullOrWhiteSpace(platformText))
-                        {
-                            line += $", {platformText}";
-                        }
+                        line += $", {platformText}";
                     }
+                }
 
-                    if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
-                    {
-                        line += $", {fileInfo.FileVersion}";
-                    }
+                if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
+                {
+                    line += $", {fileInfo.FileVersion}";
+                }
 
-                    if (printTargetFramework && !string.IsNullOrWhiteSpace(fileInfo.TargetFramework))
-                    {
-                        line += $", {fileInfo.TargetFramework}";
-                    }
-
-                    if (printInformationalVersion && !string.IsNullOrWhiteSpace(fileInfo.InformationalVersion))
-                    {
-                        line += $", {fileInfo.InformationalVersion}";
-                    }
+                if (printInformationalVersion && !string.IsNullOrWhiteSpace(fileInfo.InformationalVersion))
+                {
+                    line += $", {fileInfo.InformationalVersion}";
                 }
             }
 
@@ -458,7 +466,12 @@ Examples:
 
     private static void PrintGroupedFiles(List<string> files)
     {
-        foreach (var assemblyNameGroup in files.Select(f => FileInfo.Get(f)).GroupBy(f => f.AssemblyName).OrderBy(g => g.Key))
+        var fileGroups = files
+            .Select(f => FileInfo.Get(f, isConfirmedManagedAssembly: managedOnly))
+            .GroupBy(f => f.AssemblyName)
+            .OrderBy(g => g.Key);
+
+        foreach (var assemblyNameGroup in fileGroups)
         {
             Highlight(assemblyNameGroup.Key, ConsoleColor.Cyan);
             foreach (var shaGroup in assemblyNameGroup.GroupBy(f => f.Sha))
@@ -470,6 +483,11 @@ Examples:
 
                 if (fileInfo.AssemblyName != null)
                 {
+                    if (printTargetFramework && !string.IsNullOrWhiteSpace(fileInfo.TargetFramework))
+                    {
+                        Highlight(" " + fileInfo.TargetFramework, ConsoleColor.Blue, newLineAtEnd: false);
+                    }
+
                     if (checkSn)
                     {
                         var signedText = fileInfo.SignedText;
@@ -491,11 +509,6 @@ Examples:
                     if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
                     {
                         Highlight(" " + fileInfo.FileVersion, ConsoleColor.DarkYellow, newLineAtEnd: false);
-                    }
-
-                    if (printTargetFramework && !string.IsNullOrWhiteSpace(fileInfo.TargetFramework))
-                    {
-                        Highlight(" " + fileInfo.TargetFramework, ConsoleColor.Blue, newLineAtEnd: false);
                     }
 
                     if (printInformationalVersion && !string.IsNullOrWhiteSpace(fileInfo.InformationalVersion))

@@ -16,12 +16,17 @@ public class FileInfo
     public string Architecture { get; set; }
     public string Platform { get; set; }
 
-    public static FileInfo Get(string filePath)
+    public static FileInfo Get(string filePath, bool isConfirmedManagedAssembly = false)
     {
         var fileInfo = new FileInfo
         {
             FilePath = filePath
         };
+
+        if (isConfirmedManagedAssembly)
+        {
+            fileInfo.isManagedAssembly = true;
+        }
 
         return fileInfo;
     }
@@ -40,7 +45,7 @@ public class FileInfo
         }
     }
 
-    private static bool GetIsManagedAssembly(string filePath)
+    public static bool GetIsManagedAssembly(string filePath)
     {
         if (string.IsNullOrWhiteSpace(filePath))
         {
@@ -93,6 +98,16 @@ public class FileInfo
         }
     }
 
+    private string version = null;
+    public string Version
+    {
+        get
+        {
+            ReadModule();
+            return version;
+        }
+    }
+
     private string fileVersion = null;
     public string FileVersion 
     {
@@ -138,6 +153,8 @@ public class FileInfo
 
             using (var module = ModuleDefinition.ReadModule(filePath))
             {
+                version = module.Assembly.Name.Version.ToString();
+
                 var customAttributes = module.GetCustomAttributes().ToArray();
 
                 var targetFrameworkAttribute = customAttributes.FirstOrDefault(a => a.AttributeType.FullName == "System.Runtime.Versioning.TargetFrameworkAttribute");
