@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Mono.Cecil;
 
@@ -89,7 +88,7 @@ public class FileInfo
     }
 
     private string targetFramework = null;
-    public string TargetFramework 
+    public string TargetFramework
     {
         get
         {
@@ -109,7 +108,7 @@ public class FileInfo
     }
 
     private string fileVersion = null;
-    public string FileVersion 
+    public string FileVersion
     {
         get
         {
@@ -119,7 +118,7 @@ public class FileInfo
     }
 
     private string informationalVersion = null;
-    public string InformationalVersion 
+    public string InformationalVersion
     {
         get
         {
@@ -136,54 +135,64 @@ public class FileInfo
             return;
         }
 
-        readModule = true;
-        ReadModuleInfo();
-    }
-
-    private void ReadModuleInfo()
-    {
-        try
+        lock (this)
         {
-            if (!IsManagedAssembly)
+            if (readModule)
             {
                 return;
             }
 
-            string filePath = FilePath;
+            readModule = true;
 
-            using (var module = ModuleDefinition.ReadModule(filePath))
+            try
             {
-                version = module.Assembly.Name.Version.ToString();
-
-                var customAttributes = module.GetCustomAttributes().ToArray();
-
-                var targetFrameworkAttribute = customAttributes.FirstOrDefault(a => a.AttributeType.FullName == "System.Runtime.Versioning.TargetFrameworkAttribute");
-                if (targetFrameworkAttribute != null)
-                {
-                    var value = targetFrameworkAttribute.ConstructorArguments[0].Value;
-                    string tf = ShortenTargetFramework(value.ToString());
-                    targetFramework = tf;
-                }
-
-                var assemblyFileVersion = customAttributes.FirstOrDefault(a => a.AttributeType.FullName ==
-                    "System.Reflection.AssemblyFileVersionAttribute");
-                if (assemblyFileVersion != null)
-                {
-                    var value = assemblyFileVersion.ConstructorArguments[0].Value;
-                    fileVersion = value.ToString();
-                }
-
-                var assemblyInformationalVersion = customAttributes.FirstOrDefault(a => a.AttributeType.FullName ==
-                    "System.Reflection.AssemblyInformationalVersionAttribute");
-                if (assemblyInformationalVersion != null)
-                {
-                    var value = assemblyInformationalVersion.ConstructorArguments[0].Value;
-                    informationalVersion = value.ToString();
-                }
+                ReadModuleInfo();
+            }
+            catch
+            {
             }
         }
-        catch
+    }
+
+    private void ReadModuleInfo()
+    {
+        if (!IsManagedAssembly)
         {
+            return;
+        }
+
+        string filePath = FilePath;
+
+        var parameters = new ReaderParameters(ReadingMode.Deferred);
+        using (var module = Mono.Cecil.ModuleDefinition.ReadModule(filePath, parameters))
+        {
+            version = module.Assembly.Name.Version.ToString();
+
+            var customAttributes = module.GetCustomAttributes().ToArray();
+
+            var targetFrameworkAttribute = customAttributes.FirstOrDefault(a => a.AttributeType.FullName == "System.Runtime.Versioning.TargetFrameworkAttribute");
+            if (targetFrameworkAttribute != null)
+            {
+                var value = targetFrameworkAttribute.ConstructorArguments[0].Value;
+                string tf = ShortenTargetFramework(value.ToString());
+                targetFramework = tf;
+            }
+
+            var assemblyFileVersion = customAttributes.FirstOrDefault(a => a.AttributeType.FullName ==
+                "System.Reflection.AssemblyFileVersionAttribute");
+            if (assemblyFileVersion != null)
+            {
+                var value = assemblyFileVersion.ConstructorArguments[0].Value;
+                fileVersion = value.ToString();
+            }
+
+            var assemblyInformationalVersion = customAttributes.FirstOrDefault(a => a.AttributeType.FullName ==
+                "System.Reflection.AssemblyInformationalVersionAttribute");
+            if (assemblyInformationalVersion != null)
+            {
+                var value = assemblyInformationalVersion.ConstructorArguments[0].Value;
+                informationalVersion = value.ToString();
+            }
         }
     }
 
@@ -280,7 +289,7 @@ public class FileInfo
     }
 
     private long fileSize = -1;
-    public long FileSize 
+    public long FileSize
     {
         get
         {
