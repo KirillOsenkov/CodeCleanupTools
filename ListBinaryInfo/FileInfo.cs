@@ -1,37 +1,125 @@
+using System;
+
 public class FileInfo
 {
     public string FilePath { get; set; }
-    public string AssemblyName { get; set; }
-    public string FullSigned { get; set; }
-    public string Platform { get; set; }
+
+    // read from Cecil
     public string TargetFramework { get; set; }
-    public string Architecture { get; set; }
-    public string Signed { get; set; }
     public string FileVersion { get; set; }
     public string InformationalVersion { get; set; }
 
+    // set by sn
+    public string Signed { get; set; }
+    public string FullSigned { get; set; }
+
+    // set by corflags
+    public string Architecture { get; set; }
+    public string Platform { get; set; }
+
+    private bool? isManagedAssembly;
+    public bool IsManagedAssembly
+    {
+        get
+        {
+            if (isManagedAssembly == null)
+            {
+                isManagedAssembly = GetIsManagedAssembly(FilePath);
+            }
+
+            return isManagedAssembly.Value;
+        }
+    }
+
+    private static bool GetIsManagedAssembly(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            return false;
+        }
+
+        if (!filePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
+            !filePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+            !filePath.EndsWith(".winmd", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!PEFile.PEFileReader.IsManagedAssembly(filePath))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private string assemblyName;
+    public string AssemblyName
+    {
+        get
+        {
+            if (assemblyName == null)
+            {
+                if (IsManagedAssembly)
+                {
+                    assemblyName = ListBinaryInfo.GetAssemblyNameText(FilePath);
+                }
+                else
+                {
+                    assemblyName = ListBinaryInfo.NotAManagedAssembly;
+                }
+            }
+
+            return assemblyName;
+        }
+    }
+
+    private string signedText = null;
+    private bool readSignedText;
     public string SignedText
     {
         get
         {
-            var signedText = FullSigned;
-            if (Signed != "Signed" && Signed != null)
+            if (!readSignedText)
             {
-                signedText += "(" + Signed + ")";
+                readSignedText = true;
+
+                if (IsManagedAssembly)
+                {
+                    ListBinaryInfo.CheckSigned(this);
+
+                    signedText = FullSigned ?? "";
+                    if (Signed != "Signed" && Signed != null)
+                    {
+                        signedText += "(" + Signed + ")";
+                    }
+                }
             }
 
             return signedText;
         }
     }
 
+    private string platformText = null;
+    private bool readPlatformText;
     public string PlatformText
     {
         get
         {
-            var platformText = Architecture;
-            if (Platform != "32BITPREF : 0" && Platform != null)
+            if (!readPlatformText)
             {
-                platformText += "(" + Platform + ")";
+                readPlatformText = true;
+
+                if (IsManagedAssembly)
+                {
+                    ListBinaryInfo.CheckPlatform(this);
+
+                    platformText = Architecture;
+                    if (Platform != "32BITPREF : 0" && Platform != null)
+                    {
+                        platformText += "(" + Platform + ")";
+                    }
+                }
             }
 
             return platformText;
@@ -42,8 +130,7 @@ public class FileInfo
     {
         var fileInfo = new FileInfo
         {
-            FilePath = filePath,
-            AssemblyName = ListBinaryInfo.GetAssemblyNameText(filePath),
+            FilePath = filePath
         };
 
         if (readModule && fileInfo.AssemblyName != null)

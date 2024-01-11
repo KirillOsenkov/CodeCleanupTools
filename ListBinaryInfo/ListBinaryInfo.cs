@@ -140,14 +140,14 @@ Examples:
         if (signArgument != null)
         {
             arguments.Remove(signArgument);
-            checkSn = true;
+            checkSn = snExe != null;
         }
 
         var platformArgument = arguments.FirstOrDefault(a => a == "-p");
         if (platformArgument != null)
         {
             arguments.Remove(platformArgument);
-            checkPlatform = true;
+            checkPlatform = corflagsExe != null;
         }
 
         var versionArgument = arguments.FirstOrDefault(a => a == "-v");
@@ -408,18 +408,22 @@ Examples:
                 {
                     var fileInfo = FileInfo.Get(file, ShouldReadModule);
 
-                    RunSnAndCorflags(fileInfo);
-
-                    string signedText = fileInfo.SignedText;
-                    if (!string.IsNullOrWhiteSpace(signedText))
+                    if (checkSn)
                     {
-                        line += $", {signedText}";
+                        string signedText = fileInfo.SignedText;
+                        if (!string.IsNullOrWhiteSpace(signedText))
+                        {
+                            line += $", {signedText}";
+                        }
                     }
 
-                    string platformText = fileInfo.PlatformText;
-                    if (!string.IsNullOrWhiteSpace(platformText))
+                    if (checkPlatform)
                     {
-                        line += $", {platformText}";
+                        string platformText = fileInfo.PlatformText;
+                        if (!string.IsNullOrWhiteSpace(platformText))
+                        {
+                            line += $", {platformText}";
+                        }
                     }
 
                     if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
@@ -468,18 +472,22 @@ Examples:
 
                 if (fileInfo.AssemblyName != null)
                 {
-                    RunSnAndCorflags(fileInfo);
-
-                    var signedText = fileInfo.SignedText;
-                    if (!string.IsNullOrEmpty(signedText))
+                    if (checkSn)
                     {
-                        Highlight($" {signedText}", ConsoleColor.DarkGray, newLineAtEnd: false);
+                        var signedText = fileInfo.SignedText;
+                        if (!string.IsNullOrEmpty(signedText))
+                        {
+                            Highlight($" {signedText}", ConsoleColor.DarkGray, newLineAtEnd: false);
+                        }
                     }
 
-                    var platformText = fileInfo.PlatformText;
-                    if (!string.IsNullOrEmpty(platformText))
+                    if (checkPlatform)
                     {
-                        Highlight(" " + platformText, ConsoleColor.DarkMagenta, newLineAtEnd: false);
+                        var platformText = fileInfo.PlatformText;
+                        if (!string.IsNullOrEmpty(platformText))
+                        {
+                            Highlight(" " + platformText, ConsoleColor.DarkMagenta, newLineAtEnd: false);
+                        }
                     }
 
                     if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
@@ -632,29 +640,13 @@ Examples:
         return name?.ToString();
     }
 
-    private static void RunSnAndCorflags(FileInfo fileInfo)
+    public static void CheckPlatform(FileInfo fileInfo)
     {
-        CheckPlatform(fileInfo);
-        CheckSigned(fileInfo);
-    }
-
-    private static void CheckPlatform(FileInfo fileInfo)
-    {
-        if (!checkPlatform || corflagsExe == null)
-        {
-            return;
-        }
-
         StartProcess(corflagsExe, "/nologo " + fileInfo.FilePath.QuoteIfNeeded(), fileInfo);
     }
 
-    private static void CheckSigned(FileInfo fileInfo)
+    public static void CheckSigned(FileInfo fileInfo)
     {
-        if (!checkSn || snExe == null)
-        {
-            return;
-        }
-
         StartProcess(snExe, "-vf " + fileInfo.FilePath.QuoteIfNeeded(), fileInfo);
     }
 
@@ -681,40 +673,10 @@ Examples:
             return;
         }
 
+        // corflags
         if (text.Contains("32BITPREF"))
         {
             fileInfo.Platform = text;
-            return;
-        }
-
-        if (text.Contains("Copyright") ||
-            text.Contains("(R)") ||
-            text.Contains("Version ") ||
-            text.Contains("CLR Header") ||
-            text.Contains("PE  ") ||
-            text.Contains("ILONLY  ") ||
-            text.Contains("CorFlags") ||
-            text.Contains("does not represent") ||
-            text.Contains("is verified with a key other than the identity key"))
-        {
-            return;
-        }
-
-        if (text.Contains("The specified file does not have a valid managed header"))
-        {
-            fileInfo.AssemblyName = "Native";
-            return;
-        }
-
-        if (text.Contains("is valid"))
-        {
-            fileInfo.FullSigned = "Full-signed";
-            return;
-        }
-
-        if (text.Contains("is a delay-signed or test-signed"))
-        {
-            fileInfo.FullSigned = "Delay-signed or test-signed";
             return;
         }
 
@@ -730,6 +692,39 @@ Examples:
             return;
         }
 
+        // sn
+        if (text.Contains("Copyright") ||
+            text.Contains("(R)") ||
+            text.Contains("Version ") ||
+            text.Contains("CLR Header") ||
+            text.Contains("PE  ") ||
+            text.Contains("ILONLY  ") ||
+            text.Contains("CorFlags") ||
+            text.Contains("does not represent") ||
+            text.Contains("is verified with a key other than the identity key") ||
+            text.Contains("The specified file does not have a valid managed header"))
+        {
+            return;
+        }
+
+        if (text.Contains("is valid"))
+        {
+            fileInfo.FullSigned = "Full-signed";
+            return;
+        }
+
+        if (text.Contains("is a delay-signed or test-signed"))
+        {
+            fileInfo.FullSigned = "Delay-signed or test-signed";
+            return;
+        }
+
+        if (text.Contains("Failed to verify assembly -- Strong name validation failed."))
+        {
+            fileInfo.FullSigned = "Strong name validation failed";
+            return;
+        }
+
         if (text.Contains("Signed    : 1"))
         {
             fileInfo.Signed = "Signed";
@@ -739,12 +734,6 @@ Examples:
         if (text.Contains("Signed    : 0"))
         {
             fileInfo.Signed = "Unsigned";
-            return;
-        }
-
-        if (text.Contains("Failed to verify assembly -- Strong name validation failed."))
-        {
-            fileInfo.FullSigned = "Strong name validation failed";
             return;
         }
 
