@@ -416,32 +416,7 @@ Examples:
 
     private static string GetTextLine(IList<string> rootDirectories, bool checkForManagedAssembly, string file)
     {
-        string line = file;
-
-        // make the path relative to the current root directory, if we have any root directories
-        if (rootDirectories != null && rootDirectories.Count > 0)
-        {
-            string rootDirectory = rootDirectories[0];
-            while (!line.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase))
-            {
-                rootDirectories.RemoveAt(0);
-
-                if (rootDirectories.Count > 0)
-                {
-                    rootDirectory = rootDirectories[0];
-                    line = Environment.NewLine + line;
-                }
-                else
-                {
-                    rootDirectory = null;
-                }
-            }
-
-            if (rootDirectory != null)
-            {
-                line = line.Substring(rootDirectory.Length);
-            }
-        }
+        string line = ComputeRelativePath(rootDirectories, file);
 
         var fileInfo = FileInfo.Get(file, isConfirmedManagedAssembly: managedOnly);
 
@@ -490,6 +465,38 @@ Examples:
         }
 
         return line;
+    }
+
+    private static string ComputeRelativePath(IList<string> rootDirectories, string filePath)
+    {
+        string relativePath = filePath;
+
+        // make the path relative to the current root directory, if we have any root directories
+        if (rootDirectories != null && rootDirectories.Count > 0)
+        {
+            string rootDirectory = rootDirectories[0];
+            while (!relativePath.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                rootDirectories.RemoveAt(0);
+
+                if (rootDirectories.Count > 0)
+                {
+                    rootDirectory = rootDirectories[0];
+                    relativePath = Environment.NewLine + relativePath;
+                }
+                else
+                {
+                    rootDirectory = null;
+                }
+            }
+
+            if (rootDirectory != null)
+            {
+                relativePath = relativePath.Substring(rootDirectory.Length);
+            }
+        }
+
+        return relativePath;
     }
 
     private static void PrintGroupedFiles(List<string> files)
