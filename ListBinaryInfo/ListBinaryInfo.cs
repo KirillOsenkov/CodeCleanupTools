@@ -610,7 +610,6 @@ Examples:
     public class FileInfo
     {
         public string FilePath { get; set; }
-        public string Sha { get; set; }
         public string AssemblyName { get; set; }
         public string FullSigned { get; set; }
         public string Platform { get; set; }
@@ -655,7 +654,6 @@ Examples:
             {
                 FilePath = filePath,
                 AssemblyName = GetAssemblyNameText(filePath),
-                Sha = Utilities.SHA1Hash(filePath),
                 FileSize = new System.IO.FileInfo(filePath).Length
             };
 
@@ -665,6 +663,20 @@ Examples:
             }
 
             return fileInfo;
+        }
+
+        private string sha;
+        public string Sha 
+        {
+            get
+            {
+                if (sha == null)
+                {
+                    sha = Utilities.SHA1Hash(FilePath);
+                }
+
+                return sha;
+            }
         }
     }
 
@@ -683,6 +695,12 @@ Examples:
 
     private static string GetAssemblyNameText(string file)
     {
+        if (!file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
+            !file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
         var name = GetAssemblyName(file);
         return name?.ToString();
     }
