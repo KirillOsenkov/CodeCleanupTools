@@ -9,7 +9,6 @@ public class FileInfo
     public string Signed { get; set; }
     public string FileVersion { get; set; }
     public string InformationalVersion { get; set; }
-    public long FileSize { get; set; }
 
     public string SignedText
     {
@@ -45,7 +44,6 @@ public class FileInfo
         {
             FilePath = filePath,
             AssemblyName = ListBinaryInfo.GetAssemblyNameText(filePath),
-            FileSize = new System.IO.FileInfo(filePath).Length
         };
 
         if (readModule && fileInfo.AssemblyName != null)
@@ -67,6 +65,20 @@ public class FileInfo
             }
 
             return sha;
+        }
+    }
+
+    private long fileSize = -1;
+    public long FileSize 
+    {
+        get
+        {
+            if (fileSize == -1)
+            {
+                fileSize = new System.IO.FileInfo(FilePath).Length;
+            }
+
+            return fileSize;
         }
     }
 }
