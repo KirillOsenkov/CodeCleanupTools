@@ -601,12 +601,6 @@ Examples:
 
     public static string GetAssemblyNameText(string file)
     {
-        if (!file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
-            !file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-
         var name = GetAssemblyName(file);
         return name?.ToString();
     }
