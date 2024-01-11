@@ -224,22 +224,29 @@ public class FileInfo
 
     private string signedText = null;
     private bool readSignedText;
+    private readonly object snLock = new object();
     public string SignedText
     {
         get
         {
             if (!readSignedText)
             {
-                readSignedText = true;
-
-                if (IsManagedAssembly)
+                lock (snLock)
                 {
-                    ListBinaryInfo.CheckSigned(this);
-
-                    signedText = FullSigned ?? "";
-                    if (Signed != "Signed" && Signed != null)
+                    if (!readSignedText)
                     {
-                        signedText += "(" + Signed + ")";
+                        readSignedText = true;
+
+                        if (IsManagedAssembly)
+                        {
+                            ListBinaryInfo.CheckSigned(this);
+
+                            signedText = FullSigned ?? "";
+                            if (Signed != "Signed" && Signed != null)
+                            {
+                                signedText += "(" + Signed + ")";
+                            }
+                        }
                     }
                 }
             }
@@ -250,22 +257,29 @@ public class FileInfo
 
     private string platformText = null;
     private bool readPlatformText;
+    private readonly object corflagsLock = new object();
     public string PlatformText
     {
         get
         {
             if (!readPlatformText)
             {
-                readPlatformText = true;
-
-                if (IsManagedAssembly)
+                lock (corflagsLock)
                 {
-                    ListBinaryInfo.CheckPlatform(this);
-
-                    platformText = Architecture;
-                    if (Platform != "32BITPREF : 0" && Platform != null)
+                    if (!readPlatformText)
                     {
-                        platformText += "(" + Platform + ")";
+                        readPlatformText = true;
+
+                        if (IsManagedAssembly)
+                        {
+                            ListBinaryInfo.CheckPlatform(this);
+
+                            platformText = Architecture;
+                            if (Platform != "32BITPREF : 0" && Platform != null)
+                            {
+                                platformText += "(" + Platform + ")";
+                            }
+                        }
                     }
                 }
             }
