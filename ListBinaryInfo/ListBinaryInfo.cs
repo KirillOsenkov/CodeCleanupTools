@@ -417,7 +417,15 @@ Examples:
 
             var fileInfo = FileInfo.Get(file, isConfirmedManagedAssembly: managedOnly);
 
-            if (fileInfo.IsManagedAssembly)
+            bool checkForManagedAssembly =
+                printVersion ||
+                printTargetFramework ||
+                checkSn ||
+                checkPlatform ||
+                printFileVersion ||
+                printInformationalVersion;
+
+            if (checkForManagedAssembly && fileInfo.IsManagedAssembly)
             {
                 if (printVersion)
                 {
