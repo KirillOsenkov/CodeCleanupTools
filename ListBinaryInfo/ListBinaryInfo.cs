@@ -75,8 +75,6 @@ Examples:
 
     static void Main(string[] args)
     {
-        FindCorflagsAndSn();
-
         List<string> roots = new();
         List<string> excludeDirectories = new();
         List<string> excludeFileSubstrings = new();
@@ -140,6 +138,7 @@ Examples:
         if (signArgument != null)
         {
             arguments.Remove(signArgument);
+            FindCorflagsAndSn();
             checkSn = snExe != null;
         }
 
@@ -147,6 +146,7 @@ Examples:
         if (platformArgument != null)
         {
             arguments.Remove(platformArgument);
+            FindCorflagsAndSn();
             checkPlatform = corflagsExe != null;
         }
 
@@ -584,8 +584,16 @@ Examples:
         return name;
     }
 
+    private static bool searchedForCorflagsAndSn;
     private static void FindCorflagsAndSn()
     {
+        if (searchedForCorflagsAndSn)
+        {
+            return;
+        }
+
+        searchedForCorflagsAndSn = true;
+
         foreach (var netfxToolsPath in netfxToolsPaths)
         {
             var path = Path.Combine(
