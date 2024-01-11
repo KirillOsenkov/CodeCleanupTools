@@ -385,91 +385,21 @@ Examples:
     {
         var sb = new StringBuilder();
 
+        bool checkForManagedAssembly =
+            printVersion ||
+            printTargetFramework ||
+            checkSn ||
+            checkPlatform ||
+            printFileVersion ||
+            printInformationalVersion;
+
         foreach (var file in files)
         {
-            string line = file;
-
-            // make the path relative to the current root directory, if we have any root directories
-            if (rootDirectories != null && rootDirectories.Count > 0)
+            var line = GetTextLine(rootDirectories, checkForManagedAssembly, file);
+            if (line != null)
             {
-                string rootDirectory = rootDirectories[0];
-                while (!line.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase))
-                {
-                    rootDirectories.RemoveAt(0);
-
-                    if (rootDirectories.Count > 0)
-                    {
-                        rootDirectory = rootDirectories[0];
-                        sb.AppendLine();
-                    }
-                    else
-                    {
-                        rootDirectories = null;
-                        rootDirectory = null;
-                    }
-                }
-
-                if (rootDirectory != null)
-                {
-                    line = line.Substring(rootDirectory.Length);
-                }
+                sb.AppendLine(line);
             }
-
-            var fileInfo = FileInfo.Get(file, isConfirmedManagedAssembly: managedOnly);
-
-            bool checkForManagedAssembly =
-                printVersion ||
-                printTargetFramework ||
-                checkSn ||
-                checkPlatform ||
-                printFileVersion ||
-                printInformationalVersion;
-
-            if (checkForManagedAssembly && fileInfo.IsManagedAssembly)
-            {
-                if (printVersion)
-                {
-                    if (fileInfo.Version is string version)
-                    {
-                        line += $", {version}";
-                    }
-                }
-
-                if (printTargetFramework && !string.IsNullOrWhiteSpace(fileInfo.TargetFramework))
-                {
-                    line += $", {fileInfo.TargetFramework}";
-                }
-
-                if (checkSn)
-                {
-                    string signedText = fileInfo.SignedText;
-                    if (!string.IsNullOrWhiteSpace(signedText))
-                    {
-                        line += $", {signedText}";
-                    }
-                }
-
-                if (checkPlatform)
-                {
-                    string platformText = fileInfo.PlatformText;
-                    if (!string.IsNullOrWhiteSpace(platformText))
-                    {
-                        line += $", {platformText}";
-                    }
-                }
-
-                if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
-                {
-                    line += $", {fileInfo.FileVersion}";
-                }
-
-                if (printInformationalVersion && !string.IsNullOrWhiteSpace(fileInfo.InformationalVersion))
-                {
-                    line += $", {fileInfo.InformationalVersion}";
-                }
-            }
-
-            sb.AppendLine(line);
         }
 
         string text = sb.ToString();
@@ -482,6 +412,84 @@ Examples:
         {
             Console.Write(text);
         }
+    }
+
+    private static string GetTextLine(IList<string> rootDirectories, bool checkForManagedAssembly, string file)
+    {
+        string line = file;
+
+        // make the path relative to the current root directory, if we have any root directories
+        if (rootDirectories != null && rootDirectories.Count > 0)
+        {
+            string rootDirectory = rootDirectories[0];
+            while (!line.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                rootDirectories.RemoveAt(0);
+
+                if (rootDirectories.Count > 0)
+                {
+                    rootDirectory = rootDirectories[0];
+                    line = Environment.NewLine + line;
+                }
+                else
+                {
+                    rootDirectory = null;
+                }
+            }
+
+            if (rootDirectory != null)
+            {
+                line = line.Substring(rootDirectory.Length);
+            }
+        }
+
+        var fileInfo = FileInfo.Get(file, isConfirmedManagedAssembly: managedOnly);
+
+        if (checkForManagedAssembly && fileInfo.IsManagedAssembly)
+        {
+            if (printVersion)
+            {
+                if (fileInfo.Version is string version)
+                {
+                    line += $", {version}";
+                }
+            }
+
+            if (printTargetFramework && !string.IsNullOrWhiteSpace(fileInfo.TargetFramework))
+            {
+                line += $", {fileInfo.TargetFramework}";
+            }
+
+            if (checkSn)
+            {
+                string signedText = fileInfo.SignedText;
+                if (!string.IsNullOrWhiteSpace(signedText))
+                {
+                    line += $", {signedText}";
+                }
+            }
+
+            if (checkPlatform)
+            {
+                string platformText = fileInfo.PlatformText;
+                if (!string.IsNullOrWhiteSpace(platformText))
+                {
+                    line += $", {platformText}";
+                }
+            }
+
+            if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
+            {
+                line += $", {fileInfo.FileVersion}";
+            }
+
+            if (printInformationalVersion && !string.IsNullOrWhiteSpace(fileInfo.InformationalVersion))
+            {
+                line += $", {fileInfo.InformationalVersion}";
+            }
+        }
+
+        return line;
     }
 
     private static void PrintGroupedFiles(List<string> files)
