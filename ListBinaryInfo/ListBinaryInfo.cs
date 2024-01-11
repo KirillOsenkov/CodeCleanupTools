@@ -395,7 +395,16 @@ Examples:
 
         foreach (var file in files)
         {
-            var line = GetTextLine(rootDirectories, checkForManagedAssembly, file);
+            string line = ComputeRelativePath(rootDirectories, file);
+
+            var fileInfo = FileInfo.Get(file, isConfirmedManagedAssembly: managedOnly);
+            fileInfo.RelativePath = line;
+
+            if (checkForManagedAssembly)
+            {
+                line = GetTextLine(fileInfo);
+            }
+
             if (line != null)
             {
                 sb.AppendLine(line);
@@ -414,13 +423,11 @@ Examples:
         }
     }
 
-    private static string GetTextLine(IList<string> rootDirectories, bool checkForManagedAssembly, string file)
+    private static string GetTextLine(FileInfo fileInfo)
     {
-        string line = ComputeRelativePath(rootDirectories, file);
+        string line = fileInfo.RelativePath;
 
-        var fileInfo = FileInfo.Get(file, isConfirmedManagedAssembly: managedOnly);
-
-        if (checkForManagedAssembly && fileInfo.IsManagedAssembly)
+        if (fileInfo.IsManagedAssembly)
         {
             if (printVersion)
             {

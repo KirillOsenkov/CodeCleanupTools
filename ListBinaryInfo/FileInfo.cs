@@ -6,6 +6,7 @@ using Mono.Cecil;
 public class FileInfo
 {
     public string FilePath { get; set; }
+    public string RelativePath { get; set; }
 
     // set by sn
     public string Signed { get; set; }
