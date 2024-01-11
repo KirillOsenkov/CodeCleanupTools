@@ -1,13 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Mono.Cecil;
 
 public class FileInfo
 {
     public string FilePath { get; set; }
-
-    // read from Cecil
-    public string TargetFramework { get; set; }
-    public string FileVersion { get; set; }
-    public string InformationalVersion { get; set; }
 
     // set by sn
     public string Signed { get; set; }
@@ -16,6 +15,16 @@ public class FileInfo
     // set by corflags
     public string Architecture { get; set; }
     public string Platform { get; set; }
+
+    public static FileInfo Get(string filePath)
+    {
+        var fileInfo = new FileInfo
+        {
+            FilePath = filePath
+        };
+
+        return fileInfo;
+    }
 
     private bool? isManagedAssembly;
     public bool IsManagedAssembly
@@ -74,6 +83,119 @@ public class FileInfo
         }
     }
 
+    private string targetFramework = null;
+    public string TargetFramework 
+    {
+        get
+        {
+            ReadModule();
+            return targetFramework;
+        }
+    }
+
+    private string fileVersion = null;
+    public string FileVersion 
+    {
+        get
+        {
+            ReadModule();
+            return fileVersion;
+        }
+    }
+
+    private string informationalVersion = null;
+    public string InformationalVersion 
+    {
+        get
+        {
+            ReadModule();
+            return informationalVersion;
+        }
+    }
+
+    private bool readModule = false;
+    private void ReadModule()
+    {
+        if (readModule)
+        {
+            return;
+        }
+
+        readModule = true;
+        ReadModuleInfo();
+    }
+
+    private void ReadModuleInfo()
+    {
+        try
+        {
+            if (!IsManagedAssembly)
+            {
+                return;
+            }
+
+            string filePath = FilePath;
+
+            using (var module = ModuleDefinition.ReadModule(filePath))
+            {
+                var customAttributes = module.GetCustomAttributes().ToArray();
+
+                var targetFrameworkAttribute = customAttributes.FirstOrDefault(a => a.AttributeType.FullName == "System.Runtime.Versioning.TargetFrameworkAttribute");
+                if (targetFrameworkAttribute != null)
+                {
+                    var value = targetFrameworkAttribute.ConstructorArguments[0].Value;
+                    string tf = ShortenTargetFramework(value.ToString());
+                    targetFramework = tf;
+                }
+
+                var assemblyFileVersion = customAttributes.FirstOrDefault(a => a.AttributeType.FullName ==
+                    "System.Reflection.AssemblyFileVersionAttribute");
+                if (assemblyFileVersion != null)
+                {
+                    var value = assemblyFileVersion.ConstructorArguments[0].Value;
+                    fileVersion = value.ToString();
+                }
+
+                var assemblyInformationalVersion = customAttributes.FirstOrDefault(a => a.AttributeType.FullName ==
+                    "System.Reflection.AssemblyInformationalVersionAttribute");
+                if (assemblyInformationalVersion != null)
+                {
+                    var value = assemblyInformationalVersion.ConstructorArguments[0].Value;
+                    informationalVersion = value.ToString();
+                }
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private static readonly Dictionary<string, string> targetFrameworkNames = new Dictionary<string, string>()
+    {
+        { ".NETFramework,Version=v", "net" },
+        { ".NETCoreApp,Version=v", "netcoreapp" },
+        { ".NETStandard,Version=v", "netstandard" }
+    };
+
+    private static string ShortenTargetFramework(string name)
+    {
+        foreach (var kvp in targetFrameworkNames)
+        {
+            if (name.StartsWith(kvp.Key))
+            {
+                var shortened = name.Substring(kvp.Key.Length);
+                if (kvp.Value == "net")
+                {
+                    shortened = shortened.Replace(".", "");
+                }
+
+                return kvp.Value + shortened;
+            }
+        }
+
+        return name;
+    }
+
     private string signedText = null;
     private bool readSignedText;
     public string SignedText
@@ -124,21 +246,6 @@ public class FileInfo
 
             return platformText;
         }
-    }
-
-    public static FileInfo Get(string filePath, bool readModule = false)
-    {
-        var fileInfo = new FileInfo
-        {
-            FilePath = filePath
-        };
-
-        if (readModule && fileInfo.AssemblyName != null)
-        {
-            ListBinaryInfo.ReadModuleInfo(fileInfo);
-        }
-
-        return fileInfo;
     }
 
     private string sha;

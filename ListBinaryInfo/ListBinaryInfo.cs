@@ -71,8 +71,6 @@ Examples:
     private static bool printInformationalVersion;
     private static bool printTargetFramework;
 
-    private static bool ShouldReadModule => printFileVersion || printInformationalVersion || printTargetFramework;
-
     static void Main(string[] args)
     {
         List<string> roots = new();
@@ -406,7 +404,7 @@ Examples:
 
                 if (isManagedAssembly)
                 {
-                    var fileInfo = FileInfo.Get(file, ShouldReadModule);
+                    var fileInfo = FileInfo.Get(file);
 
                     if (checkSn)
                     {
@@ -460,7 +458,7 @@ Examples:
 
     private static void PrintGroupedFiles(List<string> files)
     {
-        foreach (var assemblyNameGroup in files.Select(f => FileInfo.Get(f, ShouldReadModule)).GroupBy(f => f.AssemblyName ?? NotAManagedAssembly).OrderBy(g => g.Key))
+        foreach (var assemblyNameGroup in files.Select(f => FileInfo.Get(f)).GroupBy(f => f.AssemblyName).OrderBy(g => g.Key))
         {
             Highlight(assemblyNameGroup.Key, ConsoleColor.Cyan);
             foreach (var shaGroup in assemblyNameGroup.GroupBy(f => f.Sha))
@@ -514,74 +512,6 @@ Examples:
                 }
             }
         }
-    }
-
-    public static void ReadModuleInfo(FileInfo fileInfo)
-    {
-        try
-        {
-            string filePath = fileInfo.FilePath;
-
-            using (var module = ModuleDefinition.ReadModule(filePath))
-            {
-                var customAttributes = module.GetCustomAttributes().ToArray();
-
-                var targetFrameworkAttribute = customAttributes.FirstOrDefault(a => a.AttributeType.FullName == "System.Runtime.Versioning.TargetFrameworkAttribute");
-                if (targetFrameworkAttribute != null)
-                {
-                    var value = targetFrameworkAttribute.ConstructorArguments[0].Value;
-                    string targetFramework = ShortenTargetFramework(value.ToString());
-                    fileInfo.TargetFramework = targetFramework;
-                }
-
-                var assemblyFileVersion = customAttributes.FirstOrDefault(a => a.AttributeType.FullName ==
-                    "System.Reflection.AssemblyFileVersionAttribute");
-                if (assemblyFileVersion != null)
-                {
-                    var value = assemblyFileVersion.ConstructorArguments[0].Value;
-                    string fileVersion = value.ToString();
-                    fileInfo.FileVersion = fileVersion;
-                }
-
-                var assemblyInformationalVersion = customAttributes.FirstOrDefault(a => a.AttributeType.FullName ==
-                    "System.Reflection.AssemblyInformationalVersionAttribute");
-                if (assemblyInformationalVersion != null)
-                {
-                    var value = assemblyInformationalVersion.ConstructorArguments[0].Value;
-                    string informationalVersion = value.ToString();
-                    fileInfo.InformationalVersion = informationalVersion;
-                }
-            }
-        }
-        catch
-        {
-        }
-    }
-
-    private static readonly Dictionary<string, string> targetFrameworkNames = new Dictionary<string, string>()
-    {
-        { ".NETFramework,Version=v", "net" },
-        { ".NETCoreApp,Version=v", "netcoreapp" },
-        { ".NETStandard,Version=v", "netstandard" }
-    };
-
-    private static string ShortenTargetFramework(string name)
-    {
-        foreach (var kvp in targetFrameworkNames)
-        {
-            if (name.StartsWith(kvp.Key))
-            {
-                var shortened = name.Substring(kvp.Key.Length);
-                if (kvp.Value == "net")
-                {
-                    shortened = shortened.Replace(".", "");
-                }
-
-                return kvp.Value + shortened;
-            }
-        }
-
-        return name;
     }
 
     private static bool searchedForCorflagsAndSn;
