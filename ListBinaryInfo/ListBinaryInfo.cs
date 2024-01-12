@@ -548,6 +548,11 @@ Examples:
                         }
                     }
 
+                    if (printVersion && !string.IsNullOrWhiteSpace(fileInfo.Version))
+                    {
+                        Highlight(" " + fileInfo.Version, ConsoleColor.DarkCyan, newLineAtEnd: false);
+                    }
+
                     if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
                     {
                         Highlight(" " + fileInfo.FileVersion, ConsoleColor.DarkYellow, newLineAtEnd: false);
