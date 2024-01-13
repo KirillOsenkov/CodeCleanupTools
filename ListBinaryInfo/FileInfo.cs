@@ -5,8 +5,9 @@ using Mono.Cecil;
 
 public class FileInfo
 {
+    public string Text { get; set; }
+
     public string FilePath { get; set; }
-    public string RelativePath { get; set; }
 
     // set by sn
     public string Signed { get; set; }
@@ -165,7 +166,7 @@ public class FileInfo
         string filePath = FilePath;
 
         var parameters = new ReaderParameters(ReadingMode.Deferred);
-        using (var module = Mono.Cecil.ModuleDefinition.ReadModule(filePath, parameters))
+        using (var module = ModuleDefinition.ReadModule(filePath, parameters))
         {
             version = module.Assembly.Name.Version.ToString();
 

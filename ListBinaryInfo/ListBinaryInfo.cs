@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Mono.Cecil;
+using System.Threading.Tasks;
 
 class ListBinaryInfo
 {
@@ -393,22 +393,41 @@ Examples:
             printFileVersion ||
             printInformationalVersion;
 
-        foreach (var file in files)
+        var infos = new List<FileInfo>(files.Count);
+
+        for (int i = 0; i < files.Count; i++)
         {
-            string line = ComputeRelativePath(rootDirectories, file);
+            string filePath = files[i];
+            string relativePath = ComputeRelativePath(rootDirectories, filePath);
 
-            var fileInfo = FileInfo.Get(file, isConfirmedManagedAssembly: managedOnly);
-            fileInfo.RelativePath = line;
+            var fileInfo = FileInfo.Get(filePath, isConfirmedManagedAssembly: managedOnly);
+            fileInfo.Text = relativePath;
 
-            if (checkForManagedAssembly)
+            infos.Add(fileInfo);
+        }
+
+        if (checkForManagedAssembly)
+        {
+            bool parallel = true;
+            if (parallel)
             {
-                line = GetTextLine(fileInfo);
+                Parallel.ForEach(infos, info =>
+                {
+                    PopulateText(info);
+                });
             }
-
-            if (line != null)
+            else
             {
-                sb.AppendLine(line);
+                foreach (var info in infos)
+                {
+                    PopulateText(info);
+                }
             }
+        }
+
+        foreach (var file in infos)
+        {
+            sb.AppendLine(file.Text);
         }
 
         string text = sb.ToString();
@@ -423,9 +442,14 @@ Examples:
         }
     }
 
+    private static void PopulateText(FileInfo fileInfo)
+    {
+        fileInfo.Text = GetTextLine(fileInfo);
+    }
+
     private static string GetTextLine(FileInfo fileInfo)
     {
-        string line = fileInfo.RelativePath;
+        string line = fileInfo.Text;
 
         if (fileInfo.IsManagedAssembly)
         {
