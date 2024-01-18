@@ -221,6 +221,12 @@ Examples:
             excludeFileSubstrings.Add(substring);
         }
 
+        if (arguments.FirstOrDefault(a => a.StartsWith("-") || a.StartsWith("/")) is string unknownArgument)
+        {
+            Error($"Unknown argument: {unknownArgument}");
+            return;
+        }
+
         if (arguments.Count > 0)
         {
             if (arguments.Count == 1)
