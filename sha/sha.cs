@@ -20,7 +20,7 @@ internal class Sha
 
         var sha1 = Utilities.SHA1Hash(filePath);
         var sha256 = Utilities.SHA256Hash(filePath);
-        var md5 = Utilities.Hash(filePath, MD5Cng.Create());
+        var md5 = Utilities.Hash(filePath, MD5.Create());
         Console.WriteLine($"SHA1:   {sha1}");
         Console.WriteLine($"SHA256: {sha256}");
         Console.WriteLine($"MD5:    {md5}");

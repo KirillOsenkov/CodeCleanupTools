@@ -1,9 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <OutputType>Exe</OutputType>
+    <LangVersion>latest</LangVersion>
+    <DebugType>embedded</DebugType>
+    <RollForward>major</RollForward>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>sha</ToolCommandName>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>sha</PackageId>
+    <Description>Prints the SHA hash of a given file.</Description>
+<!--    
+    <IconFilePath>$(MSBuildThisFileDirectory)icon.png</IconFilePath>
+    <PackageIcon>icon.png</PackageIcon>
+-->
+    <PackageTags>.NET dotnet tool SHA hash</PackageTags>
+    <!--<PackageReadmeFile>readme.md</PackageReadmeFile>-->
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\CommonUtilities.cs" Link="CommonUtilities.cs" />
   </ItemGroup>
+
 </Project>
