@@ -440,6 +440,7 @@ Examples:
 
         if (!string.IsNullOrEmpty(outputFile))
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
             File.WriteAllText(outputFile, text);
         }
         else
