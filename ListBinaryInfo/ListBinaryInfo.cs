@@ -520,7 +520,6 @@ Examples:
                 if (rootDirectories.Count > 0)
                 {
                     rootDirectory = rootDirectories[0];
-                    relativePath = Environment.NewLine + relativePath;
                 }
                 else
                 {
