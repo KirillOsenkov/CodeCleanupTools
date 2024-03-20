@@ -3,44 +3,56 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
 
 class Program
 {
     static int Main(string[] args)
     {
-        if (args.Length > 1)
+        bool omitXmlDeclaration = false;
+
+        var arguments = new HashSet<string>(args, StringComparer.OrdinalIgnoreCase);
+
+        var xmlDeclarationArgument = arguments.FirstOrDefault(a => a == "/x" || a == "-x");
+        if (xmlDeclarationArgument != null)
+        {
+            arguments.Remove(xmlDeclarationArgument);
+            omitXmlDeclaration = true;
+        }
+
+        if (arguments.Count > 1)
         {
             PrintHelp();
             return -1;
         }
 
-        if (args.Any(a => a == "/?" || a == "-h" || a == "help"))
+        if (arguments.Any(a => a == "/?" || a == "-h" || a == "help"))
         {
             PrintHelp();
             return 0;
         }
 
-        if (args.Length == 0 || args.Length == 1 && args[0] == "/r")
+        if (arguments.Count == 0 || arguments.Count == 1 && (arguments.Single() == "/r" || arguments.Single() == "-r"))
         {
-            var searchOption = args.Length == 0 ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories;
+            var searchOption = arguments.Count == 0 ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories;
 
             var files = Directory.GetFiles(Environment.CurrentDirectory, "*.csproj", searchOption)
                 .Concat(Directory.GetFiles(Environment.CurrentDirectory, "*.vbproj", searchOption));
             foreach (var file in files)
             {
-                SortProjectItems(file);
+                SortProjectItems(file, omitXmlDeclaration);
             }
         }
         else
         {
-            if (File.Exists(args[0]))
+            if (File.Exists(arguments.Single()))
             {
-                SortProjectItems(args[0]);
+                SortProjectItems(arguments.Single(), omitXmlDeclaration);
             }
             else
             {
-                Console.WriteLine("File not found: " + args[0]);
+                Console.WriteLine("File not found: " + arguments.Single());
                 return -1;
             }
         }
@@ -50,17 +62,21 @@ class Program
 
     private static void PrintHelp()
     {
-        Console.WriteLine(@"Usage: SortProjectItems.exe [<project file>|/r]
+        Console.WriteLine(@"Usage: SortProjectItems.exe [<project file>] [/r] [/x]
        Sorts the ItemGroup contents of an MSBuild project file alphabetically.
        If the project file is not specified sorts all files in the current
        directory.
+       If /x is specified, omits XML declaration
 
 SortProjectItems.exe /r
        Recursively sorts all *.csproj && *.vbproj files in the current directory and all
-       subdirectories.");
+       subdirectories (XML declaration included in result.)
+
+SortProjectItems.exe /x
+       Sorts all *.csproj && *.vbproj files in the current directory (XML declaration omitted in result.)");
     }
 
-    static void SortProjectItems(string filePath)
+    static void SortProjectItems(string filePath, bool omitXmlDeclaration)
     {
         XDocument document = XDocument.Load(filePath, LoadOptions.PreserveWhitespace | LoadOptions.SetLineInfo);
         XNamespace msBuildNamespace = document.Root.GetDefaultNamespace();
@@ -81,10 +97,12 @@ SortProjectItems.exe /r
         var originalBytes = File.ReadAllBytes(filePath);
         byte[] newBytes = null;
 
+        var xws = new XmlWriterSettings { OmitXmlDeclaration = omitXmlDeclaration, Encoding = Encoding.UTF8 };
         using (var memoryStream = new MemoryStream())
-        using (var textWriter = new StreamWriter(memoryStream, Encoding.UTF8))
+        using (var xmlWriter = XmlWriter.Create(memoryStream, xws))
         {
-            document.Save(textWriter, SaveOptions.None);
+            document.Save(xmlWriter);
+            xmlWriter.Flush();
             newBytes = memoryStream.ToArray();
         }
 
