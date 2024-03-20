@@ -263,7 +263,7 @@ SortProjectItems.exe /r
         var original = itemGroup.Elements().ToArray();
         var sorted = original
             .OrderBy(i => i.Name.LocalName)
-            .ThenBy(i => (i.Attribute("Include") ?? i.Attribute("Remove")).Value)
+            .ThenBy(i => (i.Attribute("Include") ?? i.Attribute("Remove") ?? i.Attribute("Update")).Value)
             .ToArray();
 
         for (int i = 0; i < original.Length; i++)
