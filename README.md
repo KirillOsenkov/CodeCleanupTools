@@ -42,6 +42,7 @@ Sorts the Compile and Reference items in ItemGroups of your *.csproj and *.vbpro
   3. sortprojectitems /r
 
 It will recursively find all *.csproj and *.vbproj files in the current directory and all subdirectories and sort all MSBuild ItemGroups. It will also consolidate ItemGroups by kind and remove empty ItemGroups.
+The /x argument will omit XML declarations from output files.
 
 Note: Visual Studio normally tries to preserve sorting when modifying the project, however:
   * several operations such as Rename in Solution Explorer and Include in Project for resource files are known to break the order.
