@@ -454,9 +454,27 @@ Examples:
         fileInfo.Text = GetTextLine(fileInfo);
     }
 
+    [ThreadStatic]
+    private static StringBuilder sb = null;
+
     private static string GetTextLine(FileInfo fileInfo)
     {
-        string line = fileInfo.Text;
+        if (sb == null)
+        {
+            sb = new StringBuilder();
+        }
+
+        sb.Clear();
+
+        if (fileInfo.Text != null)
+        {
+            sb.Append(fileInfo.Text);
+        }
+
+        void AppendSeparator()
+        {
+            sb.Append(",");
+        }
 
         if (fileInfo.IsManagedAssembly)
         {
@@ -464,13 +482,15 @@ Examples:
             {
                 if (fileInfo.Version is string version)
                 {
-                    line += $", {version}";
+                    AppendSeparator();
+                    sb.Append(version);
                 }
             }
 
             if (printTargetFramework && !string.IsNullOrWhiteSpace(fileInfo.TargetFramework))
             {
-                line += $", {fileInfo.TargetFramework}";
+                AppendSeparator();
+                sb.Append(fileInfo.TargetFramework);
             }
 
             if (checkSn)
@@ -478,7 +498,8 @@ Examples:
                 string signedText = fileInfo.SignedText;
                 if (!string.IsNullOrWhiteSpace(signedText))
                 {
-                    line += $", {signedText}";
+                    AppendSeparator();
+                    sb.Append(signedText);
                 }
             }
 
@@ -487,22 +508,25 @@ Examples:
                 string platformText = fileInfo.PlatformText;
                 if (!string.IsNullOrWhiteSpace(platformText))
                 {
-                    line += $", {platformText}";
+                    AppendSeparator();
+                    sb.Append(platformText);
                 }
             }
 
             if (printFileVersion && !string.IsNullOrWhiteSpace(fileInfo.FileVersion))
             {
-                line += $", {fileInfo.FileVersion}";
+                AppendSeparator();
+                sb.Append(fileInfo.FileVersion);
             }
 
             if (printInformationalVersion && !string.IsNullOrWhiteSpace(fileInfo.InformationalVersion))
             {
-                line += $", {fileInfo.InformationalVersion}";
+                AppendSeparator();
+                sb.Append(fileInfo.InformationalVersion);
             }
         }
 
-        return line;
+        return sb.ToString();
     }
 
     private static string ComputeRelativePath(IList<string> rootDirectories, string filePath)
