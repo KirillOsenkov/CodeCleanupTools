@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Threading;
 using Microsoft.Build.Logging.StructuredLogger;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.MSBuild;
 
 class Context
@@ -28,7 +33,7 @@ class Program
                 $@"{analyzersDirectory}\Microsoft.VisualStudio.Threading.Analyzers.CSharp.dll",
                 $@"{analyzersDirectory}\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.dll",
             ],
-            CodeFixIds = ["VSTRHD111"]
+            CodeFixIds = ["VSTHRD111"]
         };
 
         var invocations = CompilerInvocationsReader.ReadInvocations(binlog);
@@ -53,7 +58,7 @@ class Program
 
         var projectInfo = CommandLineProject.CreateProjectInfo(
             projectFilePath,
-            LanguageNames.CSharp,
+            language,
             invocation.CommandLineArguments,
             invocation.ProjectDirectory,
             workspace);
@@ -63,7 +68,44 @@ class Program
         var project = solution.GetProject(projectInfo.Id);
         var compilation = project.GetCompilationAsync().Result;
 
-        var diagnostics = compilation.GetDiagnostics();
+        var relevantAnalyzerReferences = project.AnalyzerReferences.OfType<AnalyzerFileReference>().Where(a => context.AnalyzerFilePaths.Contains(a.FullPath)).ToArray();
+
+        var assemblies = relevantAnalyzerReferences.Select(a => a.GetAssembly()).ToArray();
+
+        var analyzers = relevantAnalyzerReferences.SelectMany(a => a.GetAnalyzers(language));
+
+        var fixers = LoadFixers(assemblies, language);
+
+        var codeFixIdSet = context.CodeFixIds.ToHashSet();
+
+        var analyzersAndFixersPerId = context.CodeFixIds.Select(id =>
+        (
+            id,
+            analyzer: analyzers.FirstOrDefault(a => a.SupportedDiagnostics.Any(d => d.Id == id)),
+            fixer: fixers.FirstOrDefault(f => f.FixableDiagnosticIds.Contains(id))
+        )).Where(t => t.analyzer != null && t.fixer != null).ToArray();
+
+        var applicableAnalyzers = analyzersAndFixersPerId.Select(t => t.analyzer).ToImmutableArray();
+
+        var analyzerOptions = new CompilationWithAnalyzersOptions(
+            project.AnalyzerOptions,
+            onAnalyzerException: null,
+            concurrentAnalysis: true,
+            logAnalyzerExecutionTime: false,
+            reportSuppressedDiagnostics: false);
+        var analyzerCompilation = compilation.WithAnalyzers(applicableAnalyzers, analyzerOptions);
+
+        var diagnostics = analyzerCompilation.GetAnalyzerDiagnosticsAsync().Result;
+
+        foreach (var kvp in analyzersAndFixersPerId)
+        {
+            Fix(kvp.id, kvp.analyzer, kvp.fixer);
+        }
+
+        void Fix(string id, DiagnosticAnalyzer analyzer, CodeFixProvider fixer)
+        {
+            var fixAllProvider = fixer.GetFixAllProvider();
+        }
     }
 
     private static string AppendAnalyzers(string arguments, Context context)
@@ -85,5 +127,53 @@ class Program
         }
 
         return arguments;
+    }
+
+    public static ImmutableArray<CodeFixProvider> LoadFixers(IEnumerable<Assembly> assemblies, string language)
+    {
+        return assemblies
+            .SelectMany(GetConcreteTypes)
+            .Where(t => typeof(CodeFixProvider).IsAssignableFrom(t))
+            .Where(t => IsExportedForLanguage(t, language))
+            .Select(CreateInstanceOfCodeFix)
+            .OfType<CodeFixProvider>()
+            .ToImmutableArray();
+    }
+
+    private static bool IsExportedForLanguage(Type codeFixProvider, string language)
+    {
+        var exportAttribute = codeFixProvider.GetCustomAttribute<ExportCodeFixProviderAttribute>(inherit: false);
+        return exportAttribute is not null && exportAttribute.Languages.Contains(language);
+    }
+
+    private static CodeFixProvider CreateInstanceOfCodeFix(Type codeFixProvider)
+    {
+        try
+        {
+            return (CodeFixProvider)Activator.CreateInstance(codeFixProvider);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static IEnumerable<Type> GetConcreteTypes(Assembly assembly)
+    {
+        try
+        {
+            var concreteTypes = assembly
+                .GetTypes()
+                .Where(type => !type.GetTypeInfo().IsInterface
+                    && !type.GetTypeInfo().IsAbstract
+                    && !type.GetTypeInfo().ContainsGenericParameters);
+
+            // Realize the collection to ensure exceptions are caught
+            return concreteTypes.ToList();
+        }
+        catch
+        {
+            return Type.EmptyTypes;
+        }
     }
 }
