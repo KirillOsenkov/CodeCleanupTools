@@ -7,9 +7,10 @@ using System.Reflection;
 using System.Threading;
 using Microsoft.Build.Logging.StructuredLogger;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.MSBuild;
+using Microsoft.CodeAnalysis.Text;
 
 class Context
 {
@@ -45,7 +46,7 @@ class Program
 
     private static void FormatCompilation(CompilerInvocation invocation, Context context)
     {
-        var workspace = MSBuildWorkspace.Create();
+        var workspace = new AdhocWorkspace();
 
         string projectFilePath = invocation.ProjectFilePath;
 
@@ -97,15 +98,63 @@ class Program
 
         var diagnostics = analyzerCompilation.GetAnalyzerDiagnosticsAsync().Result;
 
+        var newSolution = solution;
+
         foreach (var kvp in analyzersAndFixersPerId)
         {
             Fix(kvp.id, kvp.analyzer, kvp.fixer);
         }
 
+        var newProject = newSolution.GetProject(project.Id);
+
+        foreach (var docId in project.DocumentIds)
+        {
+            var oldDoc = project.GetDocument(docId);
+            var newDoc = newProject.GetDocument(docId);
+
+            var oldText = oldDoc.GetTextAsync().Result;
+            var newText = newDoc.GetTextAsync().Result;
+
+            if (oldText != newText)
+            {
+                WriteChanges(newDoc.FilePath, newText);
+            }
+        }
+
         void Fix(string id, DiagnosticAnalyzer analyzer, CodeFixProvider fixer)
         {
-            var fixAllProvider = fixer.GetFixAllProvider();
+            var diagnosticsPerFile = diagnostics
+                .Where(d => d.Id == id && d.Location.IsInSource)
+                .GroupBy(d => d.Location.SourceTree);
+
+            foreach (var kvp in diagnosticsPerFile)
+            {
+                var tree = kvp.Key;
+                var diagnosticsInFile = kvp;
+
+                var document = solution.GetDocument(tree);
+                if (document == null)
+                {
+                    continue;
+                }
+
+                document = newSolution.GetDocument(document.Id);
+
+                foreach (var diag in diagnosticsInFile)
+                {
+                    var context = new CodeFixContext(document, diag, (codeAction, diags) =>
+                    {
+                        var op = codeAction.GetOperationsAsync(CancellationToken.None).Result.OfType<ApplyChangesOperation>().FirstOrDefault();
+                        newSolution = op.ChangedSolution;
+                    }, CancellationToken.None);
+                    fixer.RegisterCodeFixesAsync(context);
+                }
+            }
         }
+    }
+
+    private static void WriteChanges(string filePath, SourceText newText)
+    {
     }
 
     private static string AppendAnalyzers(string arguments, Context context)
