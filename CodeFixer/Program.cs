@@ -46,6 +46,11 @@ class Program
         var invocations = CompilerInvocationsReader.ReadInvocations(binlog);
         foreach (var invocation in invocations)
         {
+            if (invocation.ProjectFilePath.Contains("wpftmp.csproj", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             FormatCompilation(invocation, context, workspace);
         }
     }
