@@ -16,6 +16,7 @@ class Context
 {
     public IReadOnlyList<string> AnalyzerFilePaths { get; set; }
     public IReadOnlyList<string> CodeFixIds { get; set; }
+    public IReadOnlyList<string> FixerEquivalenceKeys { get; set; }
 }
 
 class Program
@@ -34,7 +35,8 @@ class Program
                 $@"{analyzersDirectory}\Microsoft.VisualStudio.Threading.Analyzers.CSharp.dll",
                 $@"{analyzersDirectory}\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.dll",
             ],
-            CodeFixIds = ["VSTHRD111"]
+            CodeFixIds = ["VSTHRD111"],
+            FixerEquivalenceKeys = ["False"]
         };
 
         var invocations = CompilerInvocationsReader.ReadInvocations(binlog);
@@ -51,6 +53,8 @@ class Program
         string projectFilePath = invocation.ProjectFilePath;
 
         string arguments = invocation.CommandLineArguments;
+
+        var fixerNames = context.FixerEquivalenceKeys;
 
         arguments = AppendAnalyzers(arguments, context);
 
@@ -105,6 +109,43 @@ class Program
             Fix(kvp.id, kvp.analyzer, kvp.fixer);
         }
 
+        void Fix(string id, DiagnosticAnalyzer analyzer, CodeFixProvider fixer)
+        {
+            var diagnosticsPerFile = diagnostics
+                .Where(d => d.Id == id && d.Location.IsInSource)
+                .GroupBy(d => d.Location.SourceTree);
+
+            foreach (var kvp in diagnosticsPerFile)
+            {
+                var tree = kvp.Key;
+                var diagnosticsInFile = kvp.OrderByDescending(d => d.Location.SourceSpan.Start).ToArray();
+
+                var document = solution.GetDocument(tree);
+                if (document == null)
+                {
+                    continue;
+                }
+
+                foreach (var diag in diagnosticsInFile)
+                {
+                    document = newSolution.GetDocument(document.Id);
+
+                    var context = new CodeFixContext(document, diag, (codeAction, diags) =>
+                    {
+                        if (fixerNames == null ||
+                            fixerNames.Count == 0 ||
+                            codeAction.EquivalenceKey == null ||
+                            fixerNames.Contains(codeAction.EquivalenceKey))
+                        {
+                            var op = codeAction.GetOperationsAsync(CancellationToken.None).Result.OfType<ApplyChangesOperation>().FirstOrDefault();
+                            newSolution = op.ChangedSolution;
+                        }
+                    }, CancellationToken.None);
+                    fixer.RegisterCodeFixesAsync(context);
+                }
+            }
+        }
+
         var newProject = newSolution.GetProject(project.Id);
 
         foreach (var docId in project.DocumentIds)
@@ -118,37 +159,6 @@ class Program
             if (oldText != newText)
             {
                 WriteChanges(newDoc.FilePath, newText);
-            }
-        }
-
-        void Fix(string id, DiagnosticAnalyzer analyzer, CodeFixProvider fixer)
-        {
-            var diagnosticsPerFile = diagnostics
-                .Where(d => d.Id == id && d.Location.IsInSource)
-                .GroupBy(d => d.Location.SourceTree);
-
-            foreach (var kvp in diagnosticsPerFile)
-            {
-                var tree = kvp.Key;
-                var diagnosticsInFile = kvp;
-
-                var document = solution.GetDocument(tree);
-                if (document == null)
-                {
-                    continue;
-                }
-
-                document = newSolution.GetDocument(document.Id);
-
-                foreach (var diag in diagnosticsInFile)
-                {
-                    var context = new CodeFixContext(document, diag, (codeAction, diags) =>
-                    {
-                        var op = codeAction.GetOperationsAsync(CancellationToken.None).Result.OfType<ApplyChangesOperation>().FirstOrDefault();
-                        newSolution = op.ChangedSolution;
-                    }, CancellationToken.None);
-                    fixer.RegisterCodeFixesAsync(context);
-                }
             }
         }
     }
