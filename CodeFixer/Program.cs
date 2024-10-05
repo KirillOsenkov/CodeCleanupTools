@@ -39,17 +39,19 @@ class Program
             FixerEquivalenceKeys = ["False"]
         };
 
+        // Reuse the workspace to share services across all projects. Specifically this will reuse
+        // metadata and analyzer references across projects, which are very expensive.
+        var workspace = new AdhocWorkspace();
+
         var invocations = CompilerInvocationsReader.ReadInvocations(binlog);
         foreach (var invocation in invocations)
         {
-            FormatCompilation(invocation, context);
+            FormatCompilation(invocation, context, workspace);
         }
     }
 
-    private static void FormatCompilation(CompilerInvocation invocation, Context context)
+    private static void FormatCompilation(CompilerInvocation invocation, Context context, AdhocWorkspace workspace)
     {
-        var workspace = new AdhocWorkspace();
-
         string projectFilePath = invocation.ProjectFilePath;
 
         string arguments = invocation.CommandLineArguments;
