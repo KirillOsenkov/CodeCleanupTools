@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Reflection;
+using System.Text;
 using System.Threading;
 using Microsoft.Build.Logging.StructuredLogger;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Text;
 
 class Context
 {
@@ -51,13 +50,21 @@ class Program
                 continue;
             }
 
-            FormatCompilation(invocation, context, workspace);
+            try
+            {
+                FormatCompilation(invocation, context, workspace);
+            }
+            catch
+            {
+            }
         }
     }
 
     private static void FormatCompilation(CompilerInvocation invocation, Context context, AdhocWorkspace workspace)
     {
         string projectFilePath = invocation.ProjectFilePath;
+
+        Write($"{projectFilePath}");
 
         string arguments = invocation.CommandLineArguments;
 
@@ -120,7 +127,9 @@ class Program
         {
             var diagnosticsPerFile = diagnostics
                 .Where(d => d.Id == id && d.Location.IsInSource)
-                .GroupBy(d => d.Location.SourceTree);
+                .GroupBy(d => d.Location.SourceTree)
+                .OrderBy(d => d.Key.FilePath)
+                .ToArray();
 
             foreach (var kvp in diagnosticsPerFile)
             {
@@ -165,13 +174,53 @@ class Program
 
             if (oldText != newText)
             {
-                WriteChanges(newDoc.FilePath, newText);
+                Write($"    {newDoc.FilePath}", ConsoleColor.DarkGray);
+                WriteText(newDoc.FilePath, newText.ToString(), newText.Encoding);
             }
         }
     }
 
-    private static void WriteChanges(string filePath, SourceText newText)
+    private static void WriteText(string filePath, string text, Encoding encoding = null)
     {
+        try
+        {
+            if (encoding != null)
+            {
+                File.WriteAllText(filePath, text, encoding);
+            }
+            else
+            {
+                File.WriteAllText(filePath, text);
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    public static void Write(
+        string message,
+        ConsoleColor color = ConsoleColor.Gray,
+        bool newLineAtEnd = true,
+        TextWriter writer = null)
+    {
+        writer ??= Console.Out;
+
+        lock (writer)
+        {
+            var oldColor = Console.ForegroundColor;
+            Console.ForegroundColor = color;
+            if (newLineAtEnd)
+            {
+                writer.WriteLine(message);
+            }
+            else
+            {
+                writer.Write(message);
+            }
+
+            Console.ForegroundColor = oldColor;
+        }
     }
 
     private static string AppendAnalyzers(string arguments, Context context)
