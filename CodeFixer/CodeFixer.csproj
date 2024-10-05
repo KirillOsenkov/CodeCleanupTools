@@ -9,9 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.11.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="4.11.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Features" Version="4.11.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Features" Version="4.11.0" />
   </ItemGroup>
