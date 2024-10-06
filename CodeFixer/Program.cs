@@ -42,6 +42,7 @@ class Program
         // metadata and analyzer references across projects, which are very expensive.
         var workspace = new AdhocWorkspace();
 
+        Write($"Reading {binlog}");
         var invocations = CompilerInvocationsReader.ReadInvocations(binlog);
         foreach (var invocation in invocations)
         {
@@ -78,7 +79,7 @@ class Program
         var projectInfo = CommandLineProject.CreateProjectInfo(
             projectFilePath,
             language,
-            invocation.CommandLineArguments,
+            arguments,
             invocation.ProjectDirectory,
             workspace);
 
@@ -88,6 +89,10 @@ class Program
         var compilation = project.GetCompilationAsync().Result;
 
         var relevantAnalyzerReferences = project.AnalyzerReferences.OfType<AnalyzerFileReference>().Where(a => context.AnalyzerFilePaths.Contains(a.FullPath)).ToArray();
+        if (relevantAnalyzerReferences.Length == 0)
+        {
+            return;
+        }
 
         var assemblies = relevantAnalyzerReferences.Select(a => a.GetAssembly()).ToArray();
 
@@ -103,6 +108,11 @@ class Program
             analyzer: analyzers.FirstOrDefault(a => a.SupportedDiagnostics.Any(d => d.Id == id)),
             fixer: fixers.FirstOrDefault(f => f.FixableDiagnosticIds.Contains(id))
         )).Where(t => t.analyzer != null && t.fixer != null).ToArray();
+
+        if (analyzersAndFixersPerId.Length == 0)
+        {
+            return;
+        }
 
         var applicableAnalyzers = analyzersAndFixersPerId.Select(t => t.analyzer).ToImmutableArray();
 
@@ -142,6 +152,8 @@ class Program
                     continue;
                 }
 
+                Write($"    {tree.FilePath}", ConsoleColor.DarkGray);
+
                 foreach (var diag in diagnosticsInFile)
                 {
                     document = newSolution.GetDocument(document.Id);
@@ -174,7 +186,6 @@ class Program
 
             if (oldText != newText)
             {
-                Write($"    {newDoc.FilePath}", ConsoleColor.DarkGray);
                 WriteText(newDoc.FilePath, newText.ToString(), newText.Encoding);
             }
         }
