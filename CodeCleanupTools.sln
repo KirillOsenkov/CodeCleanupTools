@@ -16,8 +16,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LOC", "LOC\LOC.csproj", "{9
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FileTypes", "FileTypes\FileTypes.csproj", "{9C965CE4-2E58-4EF2-9A07-1EB132A815E4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ListBinaryInfo", "ListBinaryInfo\ListBinaryInfo.csproj", "{DD4CDF3C-806F-44C7-ADF6-2F73CAC199AD}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FindDuplicateFiles", "FindDuplicateFiles\FindDuplicateFiles.csproj", "{F71DD4B8-E30D-4548-A59E-CCEAF012DD24}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FindConflictingReferences", "FindConflictingReferences\FindConflictingReferences.csproj", "{B4012437-18E5-4C06-B0A1-79292A5CFEA3}"
@@ -74,10 +72,6 @@ Global
 		{9C965CE4-2E58-4EF2-9A07-1EB132A815E4}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{9C965CE4-2E58-4EF2-9A07-1EB132A815E4}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{9C965CE4-2E58-4EF2-9A07-1EB132A815E4}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{DD4CDF3C-806F-44C7-ADF6-2F73CAC199AD}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{DD4CDF3C-806F-44C7-ADF6-2F73CAC199AD}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{DD4CDF3C-806F-44C7-ADF6-2F73CAC199AD}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{DD4CDF3C-806F-44C7-ADF6-2F73CAC199AD}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{F71DD4B8-E30D-4548-A59E-CCEAF012DD24}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
 		{F71DD4B8-E30D-4548-A59E-CCEAF012DD24}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{F71DD4B8-E30D-4548-A59E-CCEAF012DD24}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
