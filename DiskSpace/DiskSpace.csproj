@@ -2,10 +2,8 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <Prefer32Bit>true</Prefer32Bit>
-    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
 </Project>

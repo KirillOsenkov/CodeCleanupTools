@@ -1,5 +1,10 @@
 <Project>
   <PropertyGroup>
+    <DebugType>embedded</DebugType>
+    <LangVersion>latest</LangVersion>
+    <RollForward>major</RollForward>
+  </PropertyGroup>
+  <PropertyGroup>
     <Authors>Kirill Osenkov</Authors>
     <PackageProjectUrl>https://github.com/KirillOsenkov/CodeCleanupTools</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
