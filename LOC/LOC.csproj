@@ -5,5 +5,7 @@
     <Description>Count Lines of Code</Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
     <PackageTags>loc count lines code cloc</PackageTags>
+    <PublishSingleFile>True</PublishSingleFile>
+    <PublishSelfContained>False</PublishSelfContained>
   </PropertyGroup>
 </Project>
