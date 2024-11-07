@@ -28,18 +28,18 @@ class Program
     {
         string binlog = @"C:\temp\formattee\msbuild.binlog";
 
-        string analyzersDirectory = @"C:\Users\kirillo\.nuget\packages\microsoft.visualstudio.threading.analyzers\17.11.20\analyzers\cs";
+        //string analyzersDirectory = @"C:\Users\kirillo\.nuget\packages\microsoft.visualstudio.threading.analyzers\17.11.20\analyzers\cs";
 
         var context = new Context
         {
-            AnalyzerFilePaths =
-            [
-                $@"{analyzersDirectory}\Microsoft.VisualStudio.Threading.Analyzers.dll",
-                $@"{analyzersDirectory}\Microsoft.VisualStudio.Threading.Analyzers.CSharp.dll",
-                $@"{analyzersDirectory}\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.dll",
-            ],
-            CodeFixIds = ["VSTHRD111"],
-            FixerEquivalenceKeys = ["False"]
+            //AnalyzerFilePaths =
+            //[
+            //    $@"{analyzersDirectory}\Microsoft.VisualStudio.Threading.Analyzers.dll",
+            //    $@"{analyzersDirectory}\Microsoft.VisualStudio.Threading.Analyzers.CSharp.dll",
+            //    $@"{analyzersDirectory}\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.dll",
+            //],
+            //CodeFixIds = ["VSTHRD111"],
+            //FixerEquivalenceKeys = ["False"]
         };
 
         // Reuse the workspace to share services across all projects. Specifically this will reuse
@@ -162,7 +162,7 @@ class Program
                 var tree = kvp.Key;
                 var diagnosticsInFile = kvp.OrderByDescending(d => d.Location.SourceSpan.Start).ToArray();
 
-                var document = solution.GetDocument(tree);
+                var document = newSolution.GetDocument(tree);
                 if (document == null)
                 {
                     continue;
@@ -193,19 +193,25 @@ class Program
                             codeActionOptionsProvider,
                             CancellationToken.None
                         ]);
-                    var suppressionFixes = task.GetType().GetProperty("Result").GetValue(task) as IEnumerable;
+                    var suppressionFixes = task.GetType().GetProperty("Result").GetValue(task) as IList;
+                    if (suppressionFixes.Count == 0)
+                    {
+                        continue;
+                    }
 
                     var codeFixContext = new CodeFixContext(document, diag, (codeAction, diags) =>
                     {
-                        var op = codeAction.GetOperationsAsync(CancellationToken.None).Result.OfType<ApplyChangesOperation>().FirstOrDefault();
+                        var globalSuppression = codeAction.NestedActions.FirstOrDefault(n => n.GetType().Name == "GlobalSuppressMessageCodeAction");
+                        var ops = globalSuppression.GetOperationsAsync(newSolution, null, CancellationToken.None).Result;
+                        var op = ops.OfType<ApplyChangesOperation>().FirstOrDefault();
                         newSolution = op.ChangedSolution;
                     }, CancellationToken.None);
 
                     foreach (var suppressionFix in suppressionFixes)
                     {
                         var type = suppressionFix.GetType();
-                        var action = type.GetProperty("Action").GetValue(suppressionFix) as CodeAction;
-                        var diagnostic = type.GetProperty("Diagnostics").GetValue(suppressionFix) as Diagnostic;
+                        var action = type.GetField("Action", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(suppressionFix) as CodeAction;
+                        var diagnostic = (ImmutableArray<Diagnostic>) type.GetField("Diagnostics", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(suppressionFix);
                         codeFixContext.RegisterCodeFix(action, diagnostic);
                     }
                 }
@@ -239,7 +245,7 @@ class Program
                 var tree = kvp.Key;
                 var diagnosticsInFile = kvp.OrderByDescending(d => d.Location.SourceSpan.Start).ToArray();
 
-                var document = solution.GetDocument(tree);
+                var document = newSolution.GetDocument(tree);
                 if (document == null)
                 {
                     continue;
@@ -282,6 +288,13 @@ class Program
             {
                 WriteText(newDoc.FilePath, newText.ToString(), newText.Encoding);
             }
+        }
+
+        foreach (var newDocId in newProject.DocumentIds.Except(project.DocumentIds))
+        {
+            var newDoc = newProject.GetDocument(newDocId);
+            var newText = newDoc.GetTextAsync().Result;
+            WriteText(newDoc.FilePath, newText.ToString(), Encoding.UTF8);
         }
     }
 
