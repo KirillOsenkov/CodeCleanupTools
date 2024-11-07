@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using Microsoft.Build.Logging.StructuredLogger;
@@ -10,12 +12,14 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
 
 class Context
 {
     public IReadOnlyList<string> AnalyzerFilePaths { get; set; }
     public IReadOnlyList<string> CodeFixIds { get; set; }
     public IReadOnlyList<string> FixerEquivalenceKeys { get; set; }
+    public bool Suppress { get; set; } = true;
 }
 
 class Program
@@ -128,9 +132,83 @@ class Program
 
         var newSolution = solution;
 
-        foreach (var kvp in analyzersAndFixersPerId)
+        if (context.Suppress)
         {
-            Fix(kvp.id, kvp.analyzer, kvp.fixer);
+            var csharpFeatures = Assembly.Load("Microsoft.CodeAnalysis.CSharp.Features");
+            var suppressionCodeFixProviderType = csharpFeatures.GetType("Microsoft.CodeAnalysis.CSharp.CodeFixes.Suppression.CSharpSuppressionCodeFixProvider");
+            var csharpSuppressionCodeFixProvider = Activator.CreateInstance(suppressionCodeFixProviderType);
+
+            var workspacesAssembly = typeof(Workspace).Assembly;
+
+            var diagnosticsPerFile = diagnostics
+                .Where(d => d.Location.IsInSource)
+                .GroupBy(d => d.Location.SourceTree)
+                .OrderBy(d => d.Key.FilePath)
+                .ToArray();
+
+            var codeActionOptionsType = workspacesAssembly.GetType("Microsoft.CodeAnalysis.CodeActions.CodeActionOptions");
+            var codeActionOptionsProvider = codeActionOptionsType.GetField("DefaultProvider", BindingFlags.Public | BindingFlags.Static).GetValue(null);
+
+            foreach (var kvp in diagnosticsPerFile)
+            {
+                var tree = kvp.Key;
+                var diagnosticsInFile = kvp.OrderByDescending(d => d.Location.SourceSpan.Start).ToArray();
+
+                var document = solution.GetDocument(tree);
+                if (document == null)
+                {
+                    continue;
+                }
+
+                Write($"    {tree.FilePath}", ConsoleColor.DarkGray);
+
+                foreach (var diag in diagnosticsInFile)
+                {
+                    document = newSolution.GetDocument(document.Id);
+
+                    var method = suppressionCodeFixProviderType
+                        .GetMethod(
+                            "GetFixesAsync",
+                            [
+                                typeof(TextDocument),
+                                typeof(TextSpan),
+                                typeof(IEnumerable<Diagnostic>), 
+                                workspacesAssembly.GetType("Microsoft.CodeAnalysis.CodeActions.CodeActionOptionsProvider"),
+                                typeof(CancellationToken)
+                            ]);
+
+                    var task = method.Invoke(csharpSuppressionCodeFixProvider,
+                        [
+                            document,
+                            diag.Location.SourceSpan,
+                            (IEnumerable<Diagnostic>)[diag],
+                            codeActionOptionsProvider,
+                            CancellationToken.None
+                        ]);
+                    var suppressionFixes = task.GetType().GetProperty("Result").GetValue(task) as IEnumerable;
+
+                    var codeFixContext = new CodeFixContext(document, diag, (codeAction, diags) =>
+                    {
+                        var op = codeAction.GetOperationsAsync(CancellationToken.None).Result.OfType<ApplyChangesOperation>().FirstOrDefault();
+                        newSolution = op.ChangedSolution;
+                    }, CancellationToken.None);
+
+                    foreach (var suppressionFix in suppressionFixes)
+                    {
+                        var type = suppressionFix.GetType();
+                        var action = type.GetProperty("Action").GetValue(suppressionFix) as CodeAction;
+                        var diagnostic = type.GetProperty("Diagnostics").GetValue(suppressionFix) as Diagnostic;
+                        codeFixContext.RegisterCodeFix(action, diagnostic);
+                    }
+                }
+            }
+        }
+        else
+        {
+            foreach (var kvp in analyzersAndFixersPerId)
+            {
+                Fix(kvp.id, kvp.analyzer, kvp.fixer);
+            }
         }
 
         void Fix(string id, DiagnosticAnalyzer analyzer, CodeFixProvider fixer)
