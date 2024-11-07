@@ -87,6 +87,7 @@ class Program
             arguments,
             invocation.ProjectDirectory,
             workspace);
+        projectInfo = projectInfo.WithFilePath(projectFilePath);
 
         var solution = workspace.CurrentSolution.AddProject(projectInfo);
 
@@ -204,7 +205,20 @@ class Program
                         var globalSuppression = codeAction.NestedActions.FirstOrDefault(n => n.GetType().Name == "GlobalSuppressMessageCodeAction");
                         var ops = globalSuppression.GetOperationsAsync(newSolution, null, CancellationToken.None).Result;
                         var op = ops.OfType<ApplyChangesOperation>().FirstOrDefault();
-                        newSolution = op.ChangedSolution;
+                        var candidateSolution = op.ChangedSolution;
+
+                        // Roslyn creates a new GlobalSuppressions document with FilePath null, and then
+                        // fails to detect it here:
+                        // https://github.com/dotnet/roslyn/blob/b0b8e0fe16f29a602422fa93e6366521437a4188/src/Features/Core/Portable/CodeFixes/Suppression/AbstractSuppressionCodeFixProvider.AbstractGlobalSuppressMessageCodeAction.cs#L76
+                        if (candidateSolution.GetProject(project.Id).DocumentIds.Except(project.DocumentIds).ToArray() is { Length: 1 } newDocIds)
+                        {
+                            var globalSuppressionsDocument = candidateSolution.GetDocument(newDocIds[0]);
+                            globalSuppressionsDocument = globalSuppressionsDocument.WithFilePath(
+                                Path.Combine(invocation.ProjectDirectory, globalSuppressionsDocument.Name));
+                            candidateSolution = globalSuppressionsDocument.Project.Solution;
+                        }
+
+                        newSolution = candidateSolution;
                     }, CancellationToken.None);
 
                     foreach (var suppressionFix in suppressionFixes)
