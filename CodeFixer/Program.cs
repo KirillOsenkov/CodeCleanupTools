@@ -158,6 +158,17 @@ class Program
             var codeActionOptionsType = workspacesAssembly.GetType("Microsoft.CodeAnalysis.CodeActions.CodeActionOptions");
             var codeActionOptionsProvider = codeActionOptionsType.GetField("DefaultProvider", BindingFlags.Public | BindingFlags.Static).GetValue(null);
 
+            var getFixesAsyncMethodInfo = suppressionCodeFixProviderType
+                .GetMethod(
+                    "GetFixesAsync",
+                    [
+                        typeof(TextDocument),
+                        typeof(TextSpan),
+                        typeof(IEnumerable<Diagnostic>),
+                        workspacesAssembly.GetType("Microsoft.CodeAnalysis.CodeActions.CodeActionOptionsProvider"),
+                        typeof(CancellationToken)
+                    ]);
+
             foreach (var kvp in diagnosticsPerFile)
             {
                 var tree = kvp.Key;
@@ -175,18 +186,7 @@ class Program
                 {
                     document = newSolution.GetDocument(document.Id);
 
-                    var method = suppressionCodeFixProviderType
-                        .GetMethod(
-                            "GetFixesAsync",
-                            [
-                                typeof(TextDocument),
-                                typeof(TextSpan),
-                                typeof(IEnumerable<Diagnostic>),
-                                workspacesAssembly.GetType("Microsoft.CodeAnalysis.CodeActions.CodeActionOptionsProvider"),
-                                typeof(CancellationToken)
-                            ]);
-
-                    var task = method.Invoke(csharpSuppressionCodeFixProvider,
+                    var task = getFixesAsyncMethodInfo.Invoke(csharpSuppressionCodeFixProvider,
                         [
                             document,
                             diag.Location.SourceSpan,
