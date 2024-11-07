@@ -73,9 +73,10 @@ class Program
 
         string arguments = invocation.CommandLineArguments;
 
-        var fixerNames = context.FixerEquivalenceKeys;
-
-        arguments = AppendAnalyzers(arguments, context);
+        if (context.AnalyzerFilePaths != null)
+        {
+            arguments = AppendAnalyzers(arguments, context);
+        }
 
         string language = projectFilePath.EndsWith(".vbproj", StringComparison.OrdinalIgnoreCase) ?
                 LanguageNames.VisualBasic : LanguageNames.CSharp;
@@ -92,7 +93,12 @@ class Program
         var project = solution.GetProject(projectInfo.Id);
         var compilation = project.GetCompilationAsync().Result;
 
-        var relevantAnalyzerReferences = project.AnalyzerReferences.OfType<AnalyzerFileReference>().Where(a => context.AnalyzerFilePaths.Contains(a.FullPath)).ToArray();
+        var relevantAnalyzerReferences = project.AnalyzerReferences.OfType<AnalyzerFileReference>().ToArray();
+        if (context.AnalyzerFilePaths != null)
+        {
+            relevantAnalyzerReferences = relevantAnalyzerReferences.Where(a => context.AnalyzerFilePaths.Contains(a.FullPath)).ToArray();
+        }
+
         if (relevantAnalyzerReferences.Length == 0)
         {
             return;
@@ -104,21 +110,23 @@ class Program
 
         var fixers = FixerLoader.LoadFixers(assemblies, language);
 
-        var codeFixIdSet = context.CodeFixIds.ToHashSet();
+        (string id, DiagnosticAnalyzer analyzer, CodeFixProvider fixer)[] analyzersAndFixersPerId = null;
 
-        var analyzersAndFixersPerId = context.CodeFixIds.Select(id =>
-        (
-            id,
-            analyzer: analyzers.FirstOrDefault(a => a.SupportedDiagnostics.Any(d => d.Id == id)),
-            fixer: fixers.FirstOrDefault(f => f.FixableDiagnosticIds.Contains(id))
-        )).Where(t => t.analyzer != null && t.fixer != null).ToArray();
-
-        if (analyzersAndFixersPerId.Length == 0)
+        if (context.CodeFixIds != null)
         {
-            return;
-        }
+            analyzersAndFixersPerId = context.CodeFixIds.Select(id =>
+            (
+                id,
+                analyzer: analyzers.FirstOrDefault(a => a.SupportedDiagnostics.Any(d => d.Id == id)),
+                fixer: fixers.FirstOrDefault(f => f.FixableDiagnosticIds.Contains(id))
+            )).Where(t => t.analyzer != null && t.fixer != null).ToArray();
+            if (analyzersAndFixersPerId.Length == 0)
+            {
+                return;
+            }
 
-        var applicableAnalyzers = analyzersAndFixersPerId.Select(t => t.analyzer).ToImmutableArray();
+            analyzers = analyzersAndFixersPerId.Select(t => t.analyzer);
+        }
 
         var analyzerOptions = new CompilationWithAnalyzersOptions(
             project.AnalyzerOptions,
@@ -126,7 +134,7 @@ class Program
             concurrentAnalysis: true,
             logAnalyzerExecutionTime: false,
             reportSuppressedDiagnostics: false);
-        var analyzerCompilation = compilation.WithAnalyzers(applicableAnalyzers, analyzerOptions);
+        var analyzerCompilation = compilation.WithAnalyzers(analyzers.ToImmutableArray(), analyzerOptions);
 
         var diagnostics = analyzerCompilation.GetAnalyzerDiagnosticsAsync().Result;
 
@@ -172,7 +180,7 @@ class Program
                             [
                                 typeof(TextDocument),
                                 typeof(TextSpan),
-                                typeof(IEnumerable<Diagnostic>), 
+                                typeof(IEnumerable<Diagnostic>),
                                 workspacesAssembly.GetType("Microsoft.CodeAnalysis.CodeActions.CodeActionOptionsProvider"),
                                 typeof(CancellationToken)
                             ]);
@@ -203,11 +211,18 @@ class Program
                 }
             }
         }
-        else
+        else if (analyzersAndFixersPerId != null)
         {
             foreach (var kvp in analyzersAndFixersPerId)
             {
                 Fix(kvp.id, kvp.analyzer, kvp.fixer);
+            }
+        }
+        else
+        {
+            foreach (var diag in diagnostics)
+            {
+                Console.WriteLine(diag.ToString());
             }
         }
 
@@ -236,8 +251,9 @@ class Program
                 {
                     document = newSolution.GetDocument(document.Id);
 
-                    var context = new CodeFixContext(document, diag, (codeAction, diags) =>
+                    var codeFixContext = new CodeFixContext(document, diag, (codeAction, diags) =>
                     {
+                        var fixerNames = context.FixerEquivalenceKeys;
                         if (fixerNames == null ||
                             fixerNames.Count == 0 ||
                             codeAction.EquivalenceKey == null ||
@@ -247,7 +263,7 @@ class Program
                             newSolution = op.ChangedSolution;
                         }
                     }, CancellationToken.None);
-                    fixer.RegisterCodeFixesAsync(context);
+                    fixer.RegisterCodeFixesAsync(codeFixContext);
                 }
             }
         }
