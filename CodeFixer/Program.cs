@@ -20,6 +20,7 @@ class Context
     public IReadOnlyList<string> CodeFixIds { get; set; }
     public IReadOnlyList<string> FixerEquivalenceKeys { get; set; }
     public bool Suppress { get; set; } = true;
+    public bool WriteAnalyzerReport { get; set; } = true;
 }
 
 class Program
@@ -110,6 +111,47 @@ class Program
         var analyzers = relevantAnalyzerReferences.SelectMany(a => a.GetAnalyzers(language));
 
         var fixers = FixerLoader.LoadFixers(assemblies, language);
+
+        Dictionary<string, List<CodeFixProvider>> idToFixers = new();
+
+        var sb = new StringBuilder();
+
+        foreach (var fixer in fixers)
+        {
+            foreach (var fixableId in fixer.FixableDiagnosticIds)
+            {
+                if (!idToFixers.TryGetValue(fixableId, out var bucket))
+                {
+                    bucket = new List<CodeFixProvider>();
+                    idToFixers[fixableId] = bucket;
+                }
+
+                bucket.Add(fixer);
+            }
+        }
+
+        foreach (var analyzerGroup in analyzers.GroupBy(a => a.GetType().Assembly.GetName().Name))
+        {
+            string assemblyName = analyzerGroup.Key;
+            sb.AppendLine(assemblyName);
+            foreach (var supportedDiagnostic in analyzerGroup.SelectMany(a => a.SupportedDiagnostics).OrderBy(s => s.Category).ThenBy(s => s.Id))
+            {
+                var info = $"{supportedDiagnostic.Category},{supportedDiagnostic.Id},{supportedDiagnostic.Title},{supportedDiagnostic.DefaultSeverity},{supportedDiagnostic.Description}";
+                sb.AppendLine(info);
+                if (idToFixers.TryGetValue(supportedDiagnostic.Id, out var fixerList))
+                {
+                    foreach (var fixerInfo in fixerList)
+                    {
+                        sb.AppendLine($"    {fixerInfo}");
+                    }
+                }
+            }
+
+            sb.AppendLine();
+        }
+
+        var path = Path.Combine(invocation.ProjectDirectory, "AnalyzerReport.txt");
+        File.WriteAllText(path, sb.ToString());
 
         (string id, DiagnosticAnalyzer analyzer, CodeFixProvider fixer)[] analyzersAndFixersPerId = null;
 
@@ -225,7 +267,7 @@ class Program
                     {
                         var type = suppressionFix.GetType();
                         var action = type.GetField("Action", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(suppressionFix) as CodeAction;
-                        var diagnostic = (ImmutableArray<Diagnostic>) type.GetField("Diagnostics", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(suppressionFix);
+                        var diagnostic = (ImmutableArray<Diagnostic>)type.GetField("Diagnostics", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(suppressionFix);
                         codeFixContext.RegisterCodeFix(action, diagnostic);
                     }
                 }
