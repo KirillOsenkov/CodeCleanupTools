@@ -3,7 +3,9 @@
     <TargetFramework>net8.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <Description>List all the file types/extensions present in current directory and all subdirectories.</Description>
-    <AssemblyTitle>$(Descritpion)</AssemblyTitle>
+    <AssemblyTitle>$(Description)</AssemblyTitle>
     <PackageTags>file type extension list tool</PackageTags>
+    <PublishSingleFile>True</PublishSingleFile>
+    <PublishSelfContained>False</PublishSelfContained>
   </PropertyGroup>
 </Project>
