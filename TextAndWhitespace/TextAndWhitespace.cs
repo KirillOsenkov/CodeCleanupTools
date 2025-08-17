@@ -6,6 +6,13 @@ using System.Text;
 
 class TextAndWhitespace
 {
+    public static Encoding ForceEncoding = Encoding.UTF8;
+    public static bool ForceCRLF = true;
+    public static bool ForceLF = false;
+    public static bool ReplaceTabsWithSpaces = false;
+    public static bool TrimTrailingWhitespace = false;
+    public static bool ShouldRemoveConsecutiveEmptyLines = false;
+
     private static readonly HashSet<string> removeConsecutiveEmptyLinesFromExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "ps1",
@@ -71,26 +78,11 @@ class TextAndWhitespace
         var fileInfos = GetNonHiddenFiles(new DirectoryInfo(folder), pattern);
         foreach (var file in fileInfos)
         {
-            ProcessFile(file.FullName, stripEncoding: true);
+            ProcessFile(file.FullName);
         }
     }
 
-    private static IList<FileInfo> GetNonHiddenFiles(DirectoryInfo baseDirectory, string pattern)
-    {
-        var fileInfos = new List<FileInfo>();
-        fileInfos.AddRange(baseDirectory.GetFiles(pattern, SearchOption.TopDirectoryOnly).Where(f => (f.Attributes & FileAttributes.Hidden) == 0));
-
-        // skip hidden directories (like .git) and directories that start with '.'
-        // that are not hidden (like .nuget).
-        foreach (var directory in baseDirectory.GetDirectories("*.*", SearchOption.TopDirectoryOnly).Where(w => (w.Attributes & FileAttributes.Hidden) == 0 && !w.Name.StartsWith(".")))
-        {
-            fileInfos.AddRange(GetNonHiddenFiles(directory, pattern));
-        }
-
-        return fileInfos;
-    }
-
-    public static void ProcessFile(string file, bool stripEncoding)
+    public static void ProcessFile(string file)
     {
         if (IsBinary(file))
         {
@@ -110,22 +102,34 @@ class TextAndWhitespace
         }
 
         Encoding currentEncoding = GetEncoding(file);
-        if (stripEncoding)
-        {
-            stripEncoding = currentEncoding != Encoding.UTF8;
-        }
+        var encoding = ForceEncoding ?? currentEncoding;
 
         var extension = Path.GetExtension(file).TrimStart('.').ToLowerInvariant();
 
         var newText = ProcessText(text, extension);
-        if (stripEncoding)
+        if (encoding != currentEncoding)
         {
-            File.WriteAllText(file, newText, Encoding.UTF8);
+            File.WriteAllText(file, newText, encoding);
         }
         else if (newText != text)
         {
-            File.WriteAllText(file, newText, currentEncoding);
+            File.WriteAllText(file, newText, encoding);
         }
+    }
+
+    private static IList<FileInfo> GetNonHiddenFiles(DirectoryInfo baseDirectory, string pattern)
+    {
+        var fileInfos = new List<FileInfo>();
+        fileInfos.AddRange(baseDirectory.GetFiles(pattern, SearchOption.TopDirectoryOnly).Where(f => (f.Attributes & FileAttributes.Hidden) == 0));
+
+        // skip hidden directories (like .git) and directories that start with '.'
+        // that are not hidden (like .nuget).
+        foreach (var directory in baseDirectory.GetDirectories("*.*", SearchOption.TopDirectoryOnly).Where(w => (w.Attributes & FileAttributes.Hidden) == 0 && !w.Name.StartsWith(".")))
+        {
+            fileInfos.AddRange(GetNonHiddenFiles(directory, pattern));
+        }
+
+        return fileInfos;
     }
 
     public static Encoding GetEncoding(string filePath)
@@ -152,12 +156,6 @@ class TextAndWhitespace
         if (bom[0] == 0 && bom[1] == 0 && bom[2] == 0xfe && bom[3] == 0xff) return Encoding.UTF32;
         return new UTF8Encoding();
     }
-
-    public static bool ForceCRLF = true;
-    public static bool ForceLF = false;
-    public static bool ReplaceTabsWithSpaces = false;
-    public static bool TrimTrailingWhitespace = false;
-    public static bool ShouldRemoveConsecutiveEmptyLines = false;
 
     public static string ProcessText(string text, string extension)
     {
