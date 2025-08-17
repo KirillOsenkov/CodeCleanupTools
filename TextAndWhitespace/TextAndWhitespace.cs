@@ -112,7 +112,7 @@ class TextAndWhitespace
         Encoding currentEncoding = GetEncoding(file);
         if (stripEncoding)
         {
-            stripEncoding = (currentEncoding == Encoding.UTF8);
+            stripEncoding = currentEncoding != Encoding.UTF8;
         }
 
         var extension = Path.GetExtension(file).TrimStart('.').ToLowerInvariant();
@@ -120,7 +120,7 @@ class TextAndWhitespace
         var newText = ProcessText(text, extension);
         if (stripEncoding)
         {
-            File.WriteAllText(file, newText);
+            File.WriteAllText(file, newText, Encoding.UTF8);
         }
         else if (newText != text)
         {
@@ -153,22 +153,37 @@ class TextAndWhitespace
         return new UTF8Encoding();
     }
 
+    public static bool ForceCRLF = true;
+    public static bool ForceLF = false;
+    public static bool ReplaceTabsWithSpaces = false;
+    public static bool TrimTrailingWhitespace = false;
+    public static bool ShouldRemoveConsecutiveEmptyLines = false;
+
     public static string ProcessText(string text, string extension)
     {
         var newText = text;
-        newText = EnsureLf(newText);
 
-        if (replaceLeadingTabsWithSpaces.TryGetValue(extension, out int spaces))
+        if (ForceCRLF)
+        {
+            newText = EnsureCrLf(newText);
+        }
+
+        if (ForceLF)
+        {
+            newText = EnsureLf(newText);
+        }
+
+        if (ReplaceTabsWithSpaces && replaceLeadingTabsWithSpaces.TryGetValue(extension, out int spaces))
         {
             newText = ReplaceLeadingTabsWithSpaces(newText, spaces);
         }
 
-        if (trimTrailingWhitespaceFromExtensions.Contains(extension))
+        if (TrimTrailingWhitespace && trimTrailingWhitespaceFromExtensions.Contains(extension))
         {
             newText = TrimTrailingWhitespaceFromEveryLine(newText);
         }
 
-        if (removeConsecutiveEmptyLinesFromExtensions.Contains(extension))
+        if (ShouldRemoveConsecutiveEmptyLines && removeConsecutiveEmptyLinesFromExtensions.Contains(extension))
         {
             newText = RemoveConsecutiveEmptyLines(newText);
         }
