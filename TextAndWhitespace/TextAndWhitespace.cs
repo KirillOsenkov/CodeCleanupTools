@@ -6,7 +6,7 @@ using System.Text;
 
 class TextAndWhitespace
 {
-    public static Encoding ForceEncoding = Encoding.UTF8;
+    public static Encoding ForceEncoding = null;
     public static bool ForceCRLF = true;
     public static bool ForceLF = false;
     public static bool ReplaceTabsWithSpaces = false;
@@ -15,6 +15,7 @@ class TextAndWhitespace
 
     private static readonly HashSet<string> removeConsecutiveEmptyLinesFromExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
+        "cs",
         "ps1",
         "psm1",
     };
@@ -37,7 +38,7 @@ class TextAndWhitespace
         { "xaml", 2 },
     };
 
-    private static readonly HashSet<string> binaryExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> skipExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "exe",
         "dll",
@@ -52,6 +53,8 @@ class TextAndWhitespace
         "ttf",
         "pfx",
         "lex",
+        "js",
+        "xsd"
     };
 
     static void Main(string[] args)
@@ -84,7 +87,7 @@ class TextAndWhitespace
 
     public static void ProcessFile(string file)
     {
-        if (IsBinary(file))
+        if (ShouldSkipFile(file))
         {
             return;
         }
@@ -228,10 +231,10 @@ class TextAndWhitespace
         return sb.ToString();
     }
 
-    private static bool IsBinary(string file)
+    private static bool ShouldSkipFile(string file)
     {
         var extension = Path.GetExtension(file).TrimStart('.');
-        return binaryExtensions.Contains(extension);
+        return skipExtensions.Contains(extension);
     }
 
     public static string TrimTrailingWhitespaceFromEveryLine(string text)
