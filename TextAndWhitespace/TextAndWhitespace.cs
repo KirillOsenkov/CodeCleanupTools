@@ -54,12 +54,47 @@ class TextAndWhitespace
         "pfx",
         "lex",
         "js",
-        "xsd"
+        "xsd",
+        "br",
+        "gz",
+        "tgz",
+        "7z",
+        "tar",
+        "rar",
+        "nupkg",
+        "snupkg",
+        "jar",
+        "wasm",
+        "dat",
+        "bin",
+        "binlog",
+        "so",
+        "dylib",
+        "lib",
+        "obj",
+        "woff",
+        "woff2",
+        "otf",
+        "eot",
+        "bmp",
+        "tif",
+        "tiff",
+        "webp",
+        "mp3",
+        "mp4",
+        "wav",
+    };
+
+    private static readonly HashSet<string> skipDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "bin",
+        "obj",
     };
 
     static void Main(string[] args)
     {
         var pattern = "*.*";
+        var paths = new List<string>();
         for (int i = 0; i < args.Length; i++)
         {
             var curArg = args[i];
@@ -72,31 +107,70 @@ class TextAndWhitespace
                     PrintHelp();
                     return;
                 default:
-                    pattern = curArg;
+                    if (Directory.Exists(curArg) || File.Exists(curArg))
+                    {
+                        paths.Add(Path.GetFullPath(curArg));
+                    }
+                    else if (curArg.IndexOfAny(new[] { '\\', '/' }) >= 0)
+                    {
+                        Console.Error.WriteLine($"No such file or folder: {curArg}");
+                        return;
+                    }
+                    else
+                    {
+                        pattern = curArg;
+                    }
+
                     break;
             }
         }
 
-        var folder = Environment.CurrentDirectory;
-        var fileInfos = GetNonHiddenFiles(new DirectoryInfo(folder), pattern);
-        foreach (var file in fileInfos)
+        if (paths.Count == 0)
         {
-            ProcessFile(file.FullName);
+            paths.Add(Environment.CurrentDirectory);
+        }
+
+        foreach (var path in paths)
+        {
+            if (File.Exists(path))
+            {
+                // a file named on the command line is processed whatever its extension
+                TryProcessFile(path, explicitlyNamed: true);
+                continue;
+            }
+
+            var fileInfos = GetNonHiddenFiles(new DirectoryInfo(path), pattern);
+            foreach (var file in fileInfos)
+            {
+                TryProcessFile(file.FullName, explicitlyNamed: false);
+            }
         }
     }
 
-    public static void ProcessFile(string file)
+    private static void TryProcessFile(string file, bool explicitlyNamed)
     {
-        if (ShouldSkipFile(file))
+        try
+        {
+            ProcessFile(file, explicitlyNamed);
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+        {
+            Console.Error.WriteLine($"Failed: {file}: {ex.Message}");
+        }
+    }
+
+    public static void ProcessFile(string file, bool explicitlyNamed = false)
+    {
+        if (!explicitlyNamed && ShouldSkipFile(file))
         {
             return;
         }
 
-        var text = File.ReadAllText(file);
-        if (text.Contains('\uFFFD'))
+        var bytes = File.ReadAllBytes(file);
+        if (!TryDecode(bytes, out string text, out Encoding currentEncoding))
         {
-            // it's not Unicode, let's try Default
-            text = File.ReadAllText(file, Encoding.Default);
+            Console.WriteLine($"Skipped, binary or not in a known encoding: {file}");
+            return;
         }
 
         if (IsGeneratedCode(text) || text.IndexOf('\0') > -1)
@@ -104,19 +178,15 @@ class TextAndWhitespace
             return;
         }
 
-        Encoding currentEncoding = GetEncoding(file);
         var encoding = ForceEncoding ?? currentEncoding;
 
         var extension = Path.GetExtension(file).TrimStart('.').ToLowerInvariant();
 
         var newText = ProcessText(text, extension);
-        if (encoding != currentEncoding)
+        if (encoding != currentEncoding || newText != text)
         {
             File.WriteAllText(file, newText, encoding);
-        }
-        else if (newText != text)
-        {
-            File.WriteAllText(file, newText, encoding);
+            Console.WriteLine(file);
         }
     }
 
@@ -125,9 +195,12 @@ class TextAndWhitespace
         var fileInfos = new List<FileInfo>();
         fileInfos.AddRange(baseDirectory.GetFiles(pattern, SearchOption.TopDirectoryOnly).Where(f => (f.Attributes & FileAttributes.Hidden) == 0));
 
-        // skip hidden directories (like .git) and directories that start with '.'
-        // that are not hidden (like .nuget).
-        foreach (var directory in baseDirectory.GetDirectories("*.*", SearchOption.TopDirectoryOnly).Where(w => (w.Attributes & FileAttributes.Hidden) == 0 && !w.Name.StartsWith(".")))
+        // skip hidden directories (like .git), directories that start with '.'
+        // that are not hidden (like .nuget), and build output (bin, obj).
+        foreach (var directory in baseDirectory.GetDirectories("*.*", SearchOption.TopDirectoryOnly).Where(w =>
+            (w.Attributes & FileAttributes.Hidden) == 0 &&
+            !w.Name.StartsWith(".") &&
+            !skipDirectories.Contains(w.Name)))
         {
             fileInfos.AddRange(GetNonHiddenFiles(directory, pattern));
         }
@@ -135,29 +208,87 @@ class TextAndWhitespace
         return fileInfos;
     }
 
-    public static Encoding GetEncoding(string filePath)
+    /// <summary>
+    /// Decodes the file's bytes by its byte order mark, or without one as UTF-8, else in the
+    /// system's ANSI code page. Fails for a file without a UTF-16/32 byte order mark that has
+    /// a zero byte (binary), and for one that doesn't decode and encode back to the same bytes,
+    /// so that writing the text back can never change anything but what was processed.
+    /// </summary>
+    public static bool TryDecode(byte[] bytes, out string text, out Encoding encoding)
     {
-        if (new FileInfo(filePath).Length < 4)
+        encoding = GetEncodingFromByteOrderMark(bytes);
+        if (encoding != null)
         {
-            return Encoding.ASCII;
+            return TryRoundTrip(bytes, encoding, out text);
         }
 
-        // Read the BOM
-        var bom = new byte[4];
-        using (var file = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+        if (Array.IndexOf(bytes, (byte)0) >= 0)
         {
-            file.Read(bom, 0, 4);
+            text = null;
+            return false;
         }
 
-        // Analyze the BOM
-#pragma warning disable SYSLIB0001 // Type or member is obsolete
-        if (bom[0] == 0x2b && bom[1] == 0x2f && bom[2] == 0x76) return Encoding.UTF7;
-#pragma warning restore SYSLIB0001 // Type or member is obsolete
-        if (bom[0] == 0xef && bom[1] == 0xbb && bom[2] == 0xbf) return Encoding.UTF8;
-        if (bom[0] == 0xff && bom[1] == 0xfe) return Encoding.Unicode; //UTF-16LE
-        if (bom[0] == 0xfe && bom[1] == 0xff) return Encoding.BigEndianUnicode; //UTF-16BE
-        if (bom[0] == 0 && bom[1] == 0 && bom[2] == 0xfe && bom[3] == 0xff) return Encoding.UTF32;
-        return new UTF8Encoding();
+        encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        if (TryRoundTrip(bytes, encoding, out text))
+        {
+            return true;
+        }
+
+        encoding = AnsiEncoding;
+        return TryRoundTrip(bytes, encoding, out text);
+    }
+
+    private static bool TryRoundTrip(byte[] bytes, Encoding encoding, out string text)
+    {
+        var preambleLength = encoding.GetPreamble().Length;
+        var body = new ReadOnlySpan<byte>(bytes, preambleLength, bytes.Length - preambleLength);
+        text = encoding.GetString(body);
+        if (encoding.GetBytes(text).AsSpan().SequenceEqual(body))
+        {
+            return true;
+        }
+
+        text = null;
+        return false;
+    }
+
+    public static Encoding GetEncodingFromByteOrderMark(byte[] bytes)
+    {
+        bool StartsWith(params byte[] bom) => bytes.Length >= bom.Length && bytes.AsSpan(0, bom.Length).SequenceEqual(bom);
+
+        // UTF-32 LE before UTF-16 LE: its mark starts with UTF-16 LE's
+        if (StartsWith(0xff, 0xfe, 0, 0)) return new UTF32Encoding(bigEndian: false, byteOrderMark: true);
+        if (StartsWith(0, 0, 0xfe, 0xff)) return new UTF32Encoding(bigEndian: true, byteOrderMark: true);
+        if (StartsWith(0xef, 0xbb, 0xbf)) return new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
+        if (StartsWith(0xff, 0xfe)) return new UnicodeEncoding(bigEndian: false, byteOrderMark: true);
+        if (StartsWith(0xfe, 0xff)) return new UnicodeEncoding(bigEndian: true, byteOrderMark: true);
+        return null;
+    }
+
+    private static Encoding ansiEncoding;
+
+    /// <summary>
+    /// The system's ANSI code page (Encoding.Default is UTF-8 on .NET Core), Windows-1252
+    /// where that is UTF-8 too.
+    /// </summary>
+    private static Encoding AnsiEncoding
+    {
+        get
+        {
+            if (ansiEncoding == null)
+            {
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                var encoding = Encoding.GetEncoding(0);
+                if (encoding.CodePage == Encoding.UTF8.CodePage)
+                {
+                    encoding = Encoding.GetEncoding(1252);
+                }
+
+                ansiEncoding = encoding;
+            }
+
+            return ansiEncoding;
+        }
     }
 
     public static string ProcessText(string text, string extension)
@@ -263,13 +394,18 @@ class TextAndWhitespace
 
     private static void PrintHelp()
     {
-        Console.WriteLine(@"Usage: TextAndWhitespace.exe [/stripEncoding] [pattern]
+        Console.WriteLine(@"Usage: TextAndWhitespace.exe [path ...] [pattern]
 
-    * Converts all line endings to CRLF for every file in the current
-      directory and all subdirectories
-    * Strips UTF8 encoding from files when not necessary if specified
-    * Replaces leading tabs with spaces
-    * Removes trailing whitespace from lines
+    * Converts all line endings to CRLF for every file matching the pattern
+      (*.* by default) in each folder given (the current directory by default)
+      and all its subdirectories, but hidden ones, ones starting with '.',
+      bin and obj
+    * A file given as a path is processed whatever its extension
+    * Skips binary files (a zero byte without a UTF-16/32 byte order mark) and
+      files that don't round-trip through their encoding (BOM, else UTF-8,
+      else the ANSI code page); keeps each file's encoding
+    * Replaces leading tabs with spaces (off by default)
+    * Removes trailing whitespace from lines (off by default)
 
 ");
     }
